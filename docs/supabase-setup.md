@@ -151,7 +151,8 @@ After cutover, mobile typically needs:
 - `SUPABASE_ANON_KEY`
 - Web **Client ID** (same as Supabase Google provider) for requesting an ID token — often passed as `--dart-define=GOOGLE_SERVER_CLIENT_ID=...` or equivalent env used by `google_sign_in`
 
-Exact dart-defines land in the Phase 0.5 PR/commit on `main`; this doc locks the **values you must create**, not the final Dart API surface.
+Mobile dart-defines: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `GOOGLE_SERVER_CLIENT_ID`  
+(see root README / `apps/mobile/dart_defines.example.json`). This doc locks the **values you must create**.
 
 ---
 
