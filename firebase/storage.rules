@@ -1,9 +1,0 @@
-rules_version = '2';
-service firebase.storage {
-  match /b/{bucket}/o {
-    // Phase 0: no uploads yet. Phase 2 will allow authenticated PDF upload under users/{uid}/...
-    match /{allPaths=**} {
-      allow read, write: if false;
-    }
-  }
-}

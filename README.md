@@ -1,121 +1,90 @@
 # femm
 
 Hong Kong menopause **care-navigation** prototype (not a diagnosis).  
-Stack lock: **Flutter Android** user client · **thin web** practitioner portal · **Firebase** Auth / Firestore / Storage · **Google Auth** for users and practitioners.
+Stack lock: **Flutter Android** user client · **thin web** practitioner portal · **Supabase** (Auth + Postgres + Storage) · **Google Auth** for users and practitioners.
 
-Phase 0 ships empty shells you can sign into. Later phases add Path A → Path C.
+Phase 0.5 cuts the Phase 0 Firebase bootstrap over to Supabase free tier. Later phases add Path A → Path C.
 
 ## Repo layout
 
 | Path | Role |
 | --- | --- |
-| `apps/mobile` | Flutter Android user app |
-| `apps/portal` | Vite + TypeScript practitioner portal stub |
-| `firebase/` | Firestore + Storage security rules |
-| `firebase.json` | Emulators + Hosting (portal `dist`) |
+| `apps/mobile` | Flutter Android user app (`supabase_flutter`) |
+| `apps/portal` | Vite + TypeScript practitioner portal (`@supabase/supabase-js`) |
+| `supabase/migrations` | Postgres `profiles` + private `lab-pdfs` Storage + RLS |
 
 ## Prerequisites
 
 - Flutter 3.35+ (stable), Android SDK / emulator or device
-- Node 22+ (24 recommended) for the portal and Firebase emulators
-- A Firebase project with **Google** sign-in enabled (Auth), plus Firestore and Storage
-- Android OAuth client (package `com.femm.femm_app`) and a **Web** OAuth client (used as `serverClientId` / portal)
+- Node 22+ for the portal
+- A **Supabase Free** project with **Google** Auth enabled (see setup below)
+- Google Cloud OAuth **Web** client (pasted into Supabase) + Android OAuth client (`com.femm.femm_app` + debug SHA-1)
 
-## One-time Firebase setup (Peter)
+## One-time Supabase setup (Peter)
 
-Live Google OAuth / Firebase credentials are **not** in this repo. Placeholders compile; Auth against production needs your project.
+Live credentials are **not** in this repo. Placeholders compile; Auth against production needs your Free project.
 
-1. Create a Firebase project (suggested id kept as `femm-prototype-REPLACE` until you rename).
-2. Enable **Authentication → Google**, **Cloud Firestore**, **Storage**.
-3. Register an **Android** app with package name `com.femm.femm_app`. Add your debug SHA-1.
-4. Register a **Web** app for the practitioner portal.
-5. From `apps/mobile`, run FlutterFire (or paste console values):
+Full click-path (Google OAuth, redirects, SHA-1, SQL, bucket): **[`docs/supabase-setup.md`](./docs/supabase-setup.md)**. Summary:
 
-   ```bash
-   dart pub global activate flutterfire_cli
-   flutterfire configure --project=YOUR_PROJECT_ID
-   ```
-
-   That overwrites `lib/firebase_options.dart` and `android/app/google-services.json`.  
-   Keep a copy of the example at `android/app/google-services.json.example` if you need a template again.
-
-6. Portal env: copy `apps/portal/.env.example` → `apps/portal/.env.local` and fill the `VITE_FIREBASE_*` values from the Web app config.
-7. Update `.firebaserc` `default` project id.
-8. For Android Google → Firebase ID tokens, pass the **Web client ID**:
+1. Create a Supabase project on **Free** (region near HK if offered, e.g. Singapore).
+2. **Project Settings → API:** copy **Project URL** + **anon** `public` key. Never put **service_role** in the apps or git.
+3. Google Cloud: OAuth consent (Testing + test users) → **Web** OAuth client with redirect  
+   `https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback` and origin `http://localhost:5173`.
+4. Supabase → **Authentication → Providers → Google:** paste Web Client ID + Secret.  
+   **URL Configuration:** Site URL `http://localhost:5173`; allow that redirect.
+5. Google Cloud → **Android** OAuth client: package `com.femm.femm_app` + debug SHA-1.
+6. Run SQL in `supabase/migrations/20261031140000_profiles_and_lab_pdfs.sql` (profiles RLS + private `lab-pdfs` bucket).
+7. Portal: copy `apps/portal/.env.example` → `apps/portal/.env.local` and fill `VITE_SUPABASE_*`.
+8. Mobile: pass dart-defines (or copy `apps/mobile/dart_defines.example.json` → `dart_defines.json`, gitignored):
 
    ```bash
-   flutter run --dart-define=GOOGLE_SERVER_CLIENT_ID=YOUR_WEB_CLIENT_ID.apps.googleusercontent.com
+   cd apps/mobile
+   flutter run \
+     --dart-define=SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co \
+     --dart-define=SUPABASE_ANON_KEY=eyJ... \
+     --dart-define=GOOGLE_SERVER_CLIENT_ID=YOUR_WEB_CLIENT_ID.apps.googleusercontent.com
    ```
 
-9. Authorized domains / OAuth redirect URIs: add `localhost` for portal dev.
-
-**Do not commit** service-account JSON, `.env.local`, or production keystores. Client `google-services.json` / `firebase_options.dart` are public-ish app configs; still prefer replacing placeholders locally or via FlutterFire rather than pasting unrestricted keys into PRs when avoidable.
-
-## Run — Firebase emulators
-
-From repo root (after `npm install`):
-
-```bash
-npm run emulators
-```
-
-- Auth `9099` · Firestore `8080` · Storage `9199` · Emulator UI `4000`
-
-Emulator mode unlocks an **anonymous smoke sign-in** button on both clients so you can verify wiring without Google OAuth client IDs.
+**Do not commit** `.env.local`, `dart_defines.json`, or the service_role key.
 
 ## Run — Flutter Android (`apps/mobile`)
 
 ```bash
 cd apps/mobile
 flutter pub get
-
-# Production / real Google Auth (after FlutterFire configure):
-flutter run
-
-# Against local emulators (Android emulator host loopback):
-flutter run --dart-define=USE_FIREBASE_EMULATOR=true
-
-# Physical device + emulators on your machine: set host to your LAN IP
-flutter run --dart-define=USE_FIREBASE_EMULATOR=true --dart-define=FIREBASE_EMULATOR_HOST=192.168.x.x
+flutter run --dart-define-from-file=dart_defines.json
+# or the three --dart-define flags above
 ```
 
-Sign-in writes/merges Firestore `users/{uid}` (`uid`, `email`, `displayName`, `photoURL`, `role: user`, timestamps).
+Scaffold boots with placeholder URL/anon key (sign-in fails until you wire a real project).  
+Sign-in upserts `public.profiles` for that auth uid (`role: user`).
 
 ## Run — practitioner portal (`apps/portal`)
 
 ```bash
 cd apps/portal
 npm install
-cp .env.example .env.local   # then edit
-
-# Real Firebase:
-npm run dev
-
-# Emulators:
-# set VITE_USE_FIREBASE_EMULATOR=true in .env.local
+cp .env.example .env.local   # then edit VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY
 npm run dev
 ```
 
-Or from root: `npm run portal:dev`.
+Or from root: `npm run portal:dev`. Open `http://localhost:5173`.  
+Google button uses Supabase `signInWithOAuth({ provider: 'google' })`.
 
-Build / Hosting preview:
+## Phase 0.5 acceptance
 
-```bash
-npm run portal:build
-# optional: firebase deploy --only hosting  (after project linked)
-```
-
-## Phase 0 acceptance
-
-- [x] 0.1 Flutter Android scaffold runnable  
-- [x] 0.2 Firebase Auth / Firestore / Storage configs present (placeholders + rules + emulators)  
-- [x] 0.3 Google Auth sign-in/out; UID → `users/{uid}`  
-- [x] 0.4 Thin web portal stub with Google Auth button  
-- [x] 0.5 README; secrets not committed  
+- [x] 0.5.3 Postgres `profiles` + RLS (migration checked in)
+- [x] 0.5.4 Private `lab-pdfs` bucket stub + own-uid policies (migration)
+- [x] 0.5.5 Flutter: Firebase/FlutterFire removed; `supabase_flutter` + Google ID token
+- [x] 0.5.6 Portal: Firebase JS removed; `@supabase/supabase-js` + `VITE_SUPABASE_*`
+- [x] 0.5.7 README / env examples; Firebase emulators no longer the primary path
+- [ ] 0.5.1–0.5.2 Peter: create Free project + enable Google OAuth (outside git)
 
 ## Explicitly not in this build (yet)
 
-Path B, wearables, iOS day-one, real partner inventory, imaging OCR/AI, diagnosis/HRT claims, bilingual UI — see product lock docs outside this repo if present.
+Path B, wearables, iOS day-one, real partner inventory, imaging OCR/AI, diagnosis/HRT claims, bilingual UI, PDF Edge Function (Phase 2), clinic seed (Phase 1).
+
+Firebase / Blaze is abandoned for this prototype — do not re-enable Storage on Blaze.
 
 ## License
 

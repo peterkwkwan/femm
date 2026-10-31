@@ -1,35 +1,15 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'firebase_options.dart';
+import 'config/supabase_config.dart';
 import 'services/auth_service.dart';
-
-/// Pass `--dart-define=USE_FIREBASE_EMULATOR=true` to talk to local emulators.
-const bool kUseFirebaseEmulator = bool.fromEnvironment(
-  'USE_FIREBASE_EMULATOR',
-  defaultValue: false,
-);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
+  await Supabase.initialize(
+    url: SupabaseConfig.url,
+    publishableKey: SupabaseConfig.anonKey,
   );
-
-  if (kUseFirebaseEmulator) {
-    // 10.0.2.2 is the Android emulator host loopback.
-    const host = String.fromEnvironment(
-      'FIREBASE_EMULATOR_HOST',
-      defaultValue: '10.0.2.2',
-    );
-    await FirebaseAuth.instance.useAuthEmulator(host, 9099);
-    FirebaseFirestore.instance.useFirestoreEmulator(host, 8080);
-    await FirebaseStorage.instance.useStorageEmulator(host, 9199);
-  }
-
   runApp(const FemmApp());
 }
 
@@ -63,8 +43,7 @@ class AuthGate extends StatefulWidget {
 }
 
 class _AuthGateState extends State<AuthGate> {
-  late final AuthService _authService =
-      widget.authService ?? AuthService();
+  late final AuthService _authService = widget.authService ?? AuthService();
   String? _error;
   bool _busy = false;
 
@@ -90,10 +69,11 @@ class _AuthGateState extends State<AuthGate> {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
+    return StreamBuilder<AuthState>(
       stream: _authService.authStateChanges,
       builder: (context, snapshot) {
-        final user = snapshot.data;
+        final session = snapshot.data?.session ?? _authService.currentSession;
+        final user = session?.user ?? _authService.currentUser;
         if (user != null) {
           return SignedInShell(
             user: user,
@@ -105,12 +85,9 @@ class _AuthGateState extends State<AuthGate> {
         return SignInShell(
           busy: _busy,
           error: _error,
-          useEmulator: kUseFirebaseEmulator,
+          usingPlaceholders: !SupabaseConfig.hasRealProject,
           onGoogleSignIn: () => _run(() async {
             await _authService.signInWithGoogle();
-          }),
-          onEmulatorSignIn: () => _run(() async {
-            await _authService.signInAnonymouslyForEmulator();
           }),
         );
       },
@@ -123,16 +100,14 @@ class SignInShell extends StatelessWidget {
     super.key,
     required this.busy,
     required this.error,
-    required this.useEmulator,
+    required this.usingPlaceholders,
     required this.onGoogleSignIn,
-    required this.onEmulatorSignIn,
   });
 
   final bool busy;
   final String? error;
-  final bool useEmulator;
+  final bool usingPlaceholders;
   final VoidCallback onGoogleSignIn;
-  final VoidCallback onEmulatorSignIn;
 
   @override
   Widget build(BuildContext context) {
@@ -164,6 +139,18 @@ class SignInShell extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodySmall,
               ),
+              if (usingPlaceholders) ...[
+                const SizedBox(height: 16),
+                Text(
+                  'Supabase placeholders active — set SUPABASE_URL, '
+                  'SUPABASE_ANON_KEY, and GOOGLE_SERVER_CLIENT_ID '
+                  '(see root README).',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.outline,
+                      ),
+                ),
+              ],
               const Spacer(),
               if (error != null) ...[
                 Text(
@@ -182,13 +169,6 @@ class SignInShell extends StatelessWidget {
                       )
                     : const Text('Sign in with Google'),
               ),
-              if (useEmulator) ...[
-                const SizedBox(height: 12),
-                OutlinedButton(
-                  onPressed: busy ? null : onEmulatorSignIn,
-                  child: const Text('Emulator anonymous sign-in'),
-                ),
-              ],
               const SizedBox(height: 24),
             ],
           ),
@@ -214,6 +194,9 @@ class SignedInShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final meta = user.userMetadata ?? const <String, dynamic>{};
+    final displayName = (meta['full_name'] ?? meta['name'])?.toString();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('femm'),
@@ -234,12 +217,12 @@ class SignedInShell extends StatelessWidget {
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: 12),
-            Text('UID: ${user.uid}'),
+            Text('UID: ${user.id}'),
             if (user.email != null) Text('Email: ${user.email}'),
-            if (user.displayName != null) Text('Name: ${user.displayName}'),
+            if (displayName != null) Text('Name: $displayName'),
             const SizedBox(height: 16),
             const Text(
-              'Phase 0 shell — Path A flow lands in later phases.',
+              'Phase 0.5 shell — Path A flow lands in later phases (Supabase).',
             ),
             if (error != null) ...[
               const SizedBox(height: 12),

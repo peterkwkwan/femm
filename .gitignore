@@ -22,13 +22,12 @@ apps/portal/dist/
 **/google-services.json.local
 **/GoogleService-Info.plist
 apps/portal/.env.local
+apps/mobile/dart_defines.json
+**/.env.local
 
-# Firebase
-.firebase/
-firebase-debug.log
-firestore-debug.log
-ui-debug.log
-pubsub-debug.log
+# Supabase CLI local
+supabase/.branches
+supabase/.temp
 
 # Flutter / Dart (also covered under apps/mobile/.gitignore)
 **/build/

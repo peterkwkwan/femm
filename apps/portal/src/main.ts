@@ -1,32 +1,34 @@
 import './style.css';
 import {
-  signInAnonymouslyForEmulator,
   signInWithGoogle,
   signOutUser,
-  useEmulator,
+  upsertOwnProfile,
+  usingPlaceholders,
   watchAuth,
-} from './firebase';
+} from './supabase';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) {
   throw new Error('#app root missing');
 }
 
+let profileSyncing = false;
+
 function renderSignedOut(error?: string): void {
   app!.innerHTML = `
     <main class="shell">
       <p class="brand">femm</p>
       <h1>Practitioner portal</h1>
-      <p class="lede">Phase 0 stub — Google Auth only. Appointments land in Phase 5.</p>
+      <p class="lede">Phase 0.5 stub — Google Auth via Supabase. Appointments land in Phase 5.</p>
       <p class="note">Hong Kong prototype · English UI · not a diagnosis</p>
+      ${
+        usingPlaceholders
+          ? '<p class="note">Placeholders active — copy <code>.env.example</code> → <code>.env.local</code> with your project URL + anon key.</p>'
+          : ''
+      }
       ${error ? `<p class="error">${escapeHtml(error)}</p>` : ''}
       <div class="actions">
         <button type="button" id="google-signin">Sign in with Google</button>
-        ${
-          useEmulator
-            ? '<button type="button" id="emulator-signin" class="secondary">Emulator anonymous sign-in</button>'
-            : ''
-        }
       </div>
     </main>
   `;
@@ -34,9 +36,6 @@ function renderSignedOut(error?: string): void {
   document
     .querySelector('#google-signin')
     ?.addEventListener('click', () => void onGoogle());
-  document
-    .querySelector('#emulator-signin')
-    ?.addEventListener('click', () => void onEmulator());
 }
 
 function renderSignedIn(email: string | null, uid: string): void {
@@ -75,14 +74,6 @@ async function onGoogle(): Promise<void> {
   }
 }
 
-async function onEmulator(): Promise<void> {
-  try {
-    await signInAnonymouslyForEmulator();
-  } catch (err) {
-    renderSignedOut(err instanceof Error ? err.message : String(err));
-  }
-}
-
 async function onSignOut(): Promise<void> {
   try {
     await signOutUser();
@@ -93,7 +84,17 @@ async function onSignOut(): Promise<void> {
 
 watchAuth((user) => {
   if (user) {
-    renderSignedIn(user.email, user.uid);
+    renderSignedIn(user.email ?? null, user.id);
+    if (!profileSyncing && !usingPlaceholders) {
+      profileSyncing = true;
+      void upsertOwnProfile(user)
+        .catch((err) => {
+          console.warn('profiles upsert failed', err);
+        })
+        .finally(() => {
+          profileSyncing = false;
+        });
+    }
   } else {
     renderSignedOut();
   }
