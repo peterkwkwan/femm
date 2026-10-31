@@ -1,0 +1,21 @@
+{
+  "name": "femm",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Hong Kong menopause care-navigation prototype (Flutter Android + thin web portal + Firebase).",
+  "scripts": {
+    "portal:dev": "npm --prefix apps/portal run dev",
+    "portal:build": "npm --prefix apps/portal run build",
+    "portal:preview": "npm --prefix apps/portal run preview",
+    "emulators": "firebase emulators:start --only auth,firestore,storage",
+    "emulators:all": "firebase emulators:start"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/peterkwkwan/femm.git"
+  },
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "firebase-tools": "^15.34.2"
+  }
+}
