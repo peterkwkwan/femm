@@ -1,0 +1,47 @@
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+apps/portal/dist/
+
+# Env / secrets — never commit real credentials
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+**/serviceAccount*.json
+**/google-services.json.local
+**/GoogleService-Info.plist
+apps/portal/.env.local
+
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+pubsub-debug.log
+
+# Flutter / Dart (also covered under apps/mobile/.gitignore)
+**/build/
+**/.dart_tool/
+**/.flutter-plugins-dependencies
+**/.packages
+**/coverage/
+
+# Android local
+**/local.properties
+**/*.keystore
+**/*.jks
+
+# Misc
+*.log
+.cursor/
