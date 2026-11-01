@@ -2,8 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'config/supabase_config.dart';
+import 'models/path_a_session.dart';
 import 'screens/lab_upload_screen.dart';
+import 'screens/match_gate_screen.dart';
+import 'screens/spend_screen.dart';
+import 'screens/survey_screen.dart';
 import 'services/auth_service.dart';
+import 'services/intake_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -179,7 +184,7 @@ class SignInShell extends StatelessWidget {
   }
 }
 
-class SignedInShell extends StatelessWidget {
+class SignedInShell extends StatefulWidget {
   const SignedInShell({
     super.key,
     required this.user,
@@ -194,16 +199,61 @@ class SignedInShell extends StatelessWidget {
   final VoidCallback onSignOut;
 
   @override
+  State<SignedInShell> createState() => _SignedInShellState();
+}
+
+class _SignedInShellState extends State<SignedInShell> {
+  final IntakeService _intake = IntakeService();
+  PathASession? _session;
+  bool _loadingSession = true;
+  String? _sessionError;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSession();
+  }
+
+  Future<void> _loadSession() async {
+    setState(() {
+      _loadingSession = true;
+      _sessionError = null;
+    });
+    try {
+      final session = await _intake.fetchLatestSession();
+      if (!mounted) return;
+      setState(() {
+        _session = session;
+        _loadingSession = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _sessionError = e.toString();
+        _loadingSession = false;
+      });
+    }
+  }
+
+  Future<void> _openPath(Widget screen) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => screen),
+    );
+    await _loadSession();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final meta = user.userMetadata ?? const <String, dynamic>{};
+    final meta = widget.user.userMetadata ?? const <String, dynamic>{};
     final displayName = (meta['full_name'] ?? meta['name'])?.toString();
+    final session = _session;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('femm'),
         actions: [
           TextButton(
-            onPressed: busy ? null : onSignOut,
+            onPressed: widget.busy ? null : widget.onSignOut,
             child: const Text('Sign out'),
           ),
         ],
@@ -218,30 +268,72 @@ class SignedInShell extends StatelessWidget {
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: 12),
-            Text('UID: ${user.id}'),
-            if (user.email != null) Text('Email: ${user.email}'),
+            Text('UID: ${widget.user.id}'),
+            if (widget.user.email != null) Text('Email: ${widget.user.email}'),
             if (displayName != null) Text('Name: $displayName'),
             const SizedBox(height: 16),
             Text(
-              'Path A — upload a lab PDF, extract biomarkers, confirm rows. '
-              'Not a diagnosis.',
+              'Path A — labs → spend → survey → match. '
+              'Care-navigation only — not a diagnosis.',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 16),
             FilledButton(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const LabUploadScreen(),
-                  ),
-                );
+              onPressed: () async {
+                await _openPath(const LabUploadScreen());
               },
               child: const Text('Upload lab PDF'),
             ),
-            if (error != null) ...[
+            if (_loadingSession) ...[
+              const SizedBox(height: 16),
+              const LinearProgressIndicator(),
+            ] else if (session != null) ...[
+              const SizedBox(height: 16),
+              Text(
+                'Continue Path A',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              if (!session.hasSpend)
+                OutlinedButton(
+                  onPressed: () => _openPath(
+                    SpendScreen(session: session, intakeService: _intake),
+                  ),
+                  child: const Text('Spend categories'),
+                )
+              else if (!session.hasSurvey)
+                OutlinedButton(
+                  onPressed: () => _openPath(
+                    SurveyScreen(session: session, intakeService: _intake),
+                  ),
+                  child: const Text('Complete survey'),
+                )
+              else
+                OutlinedButton(
+                  onPressed: () => _openPath(
+                    MatchGateScreen(session: session, intakeService: _intake),
+                  ),
+                  child: const Text('Open match gate'),
+                ),
+              const SizedBox(height: 8),
+              Text(
+                session.readyForMatch
+                    ? 'Spend + survey done — match entry unlocked (Phase 4 UI next).'
+                    : 'Match stays locked until spend and survey are saved.',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+            if (_sessionError != null) ...[
               const SizedBox(height: 12),
               Text(
-                error!,
+                _sessionError!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ],
+            if (widget.error != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                widget.error!,
                 style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
             ],

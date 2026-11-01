@@ -306,6 +306,8 @@ Full deploy + smoke: [`phase2-lab-extract.md`](./phase2-lab-extract.md).
 - Caller uses the **user JWT** (RLS); do not put **service_role** in the Flutter/portal clients.
 - Offline check: `npm run test:extract-fixture` against the Phase 1 golden fixture.
 
+After Phase 2, apply Phase 3 spend/survey SQL (`20261101160000_phase3_spend_and_survey.sql`) — see [`phase3-spend-survey.md`](./phase3-spend-survey.md).
+
 ---
 
 ## Step 9 — Decommission Firebase (repo hygiene)

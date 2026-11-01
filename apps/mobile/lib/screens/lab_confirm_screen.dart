@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../models/lab_biomarker.dart';
+import '../services/intake_service.dart';
 import '../services/lab_service.dart';
+import 'spend_screen.dart';
 
 /// Editable biomarker list after extract. Flags shown only when present.
 class LabConfirmScreen extends StatefulWidget {
@@ -22,6 +24,7 @@ class LabConfirmScreen extends StatefulWidget {
 
 class _LabConfirmScreenState extends State<LabConfirmScreen> {
   late final LabService _labs = widget.labService ?? LabService();
+  final IntakeService _intake = IntakeService();
   late List<LabBiomarker> _rows;
   bool _busy = false;
   String? _error;
@@ -53,12 +56,54 @@ class _LabConfirmScreenState extends State<LabConfirmScreen> {
     });
     try {
       await _labs.confirmLabs(documentId: widget.document.id, rows: _rows);
+      final session = await _intake.ensureSessionForLab(
+        labDocumentId: widget.document.id,
+      );
       if (!mounted) return;
       setState(() {
         _confirmed = true;
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Labs confirmed and saved')),
+      );
+      await Navigator.of(context).pushReplacement(
+        MaterialPageRoute<void>(
+          builder: (_) => SpendScreen(
+            session: session,
+            intakeService: _intake,
+          ),
+        ),
+      );
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _continueToSpend() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final session = await _intake.ensureSessionForLab(
+        labDocumentId: widget.document.id,
+      );
+      if (!mounted) return;
+      await Navigator.of(context).pushReplacement(
+        MaterialPageRoute<void>(
+          builder: (_) => SpendScreen(
+            session: session,
+            intakeService: _intake,
+          ),
+        ),
       );
     } catch (e) {
       setState(() {
@@ -115,7 +160,7 @@ class _LabConfirmScreenState extends State<LabConfirmScreen> {
             Padding(
               padding: const EdgeInsets.all(12),
               child: Text(
-                'Confirmed. Spend + survey come in Phase 3.',
+                'Confirmed. Continue to spend categories and survey.',
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
             ),
@@ -140,21 +185,33 @@ class _LabConfirmScreenState extends State<LabConfirmScreen> {
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: FilledButton(
-                onPressed: (_busy || _confirmed || visible.isEmpty)
-                    ? null
-                    : _confirm,
-                child: _busy
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Text(
-                        _confirmed
-                            ? 'Labs confirmed'
-                            : 'Confirm labs (${visible.length})',
-                      ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  FilledButton(
+                    onPressed: (_busy || _confirmed || visible.isEmpty)
+                        ? null
+                        : _confirm,
+                    child: _busy && !_confirmed
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Text(
+                            _confirmed
+                                ? 'Labs confirmed'
+                                : 'Confirm labs (${visible.length})',
+                          ),
+                  ),
+                  if (_confirmed) ...[
+                    const SizedBox(height: 8),
+                    OutlinedButton(
+                      onPressed: _busy ? null : _continueToSpend,
+                      child: const Text('Continue to spend'),
+                    ),
+                  ],
+                ],
               ),
             ),
           ),

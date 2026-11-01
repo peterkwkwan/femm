@@ -14,6 +14,7 @@ After you create a Free project (see click-path setup linked from the root READM
 | `20261031140000_profiles_and_lab_pdfs.sql` | `profiles` + private `lab-pdfs` + RLS |
 | `20261101120000_phase1_clinical_and_upsell_supply.sql` | `clinics`, `appointment_slots`, `upsell_partners` + enums + select RLS |
 | `20261101140000_phase2_lab_documents.sql` | `lab_documents`, `lab_biomarker_rows` + RLS |
+| `20261101160000_phase3_spend_and_survey.sql` | `path_a_sessions`, spend selections, survey answers + RLS |
 
 ## Edge Functions (Phase 2)
 
