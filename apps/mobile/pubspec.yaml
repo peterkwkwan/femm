@@ -63,6 +63,8 @@ flutter:
 
   assets:
     - assets/labs/synthetic-hk-womens-panel.pdf
+    - assets/images/welcome-atmosphere.png
+    - assets/images/welcome-atmosphere-sm.jpg
 
   # To add assets to your application, add an assets section, like this:
   # assets:

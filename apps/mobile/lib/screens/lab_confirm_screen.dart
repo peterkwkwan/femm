@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/lab_biomarker.dart';
 import '../services/intake_service.dart';
 import '../services/lab_service.dart';
+import '../theme/petal_soft.dart';
 import 'spend_screen.dart';
 
 /// Editable biomarker list after extract. Flags shown only when present.
@@ -130,22 +131,32 @@ class _LabConfirmScreenState extends State<LabConfirmScreen> {
   @override
   Widget build(BuildContext context) {
     final visible = _visible;
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Confirm labs'),
+        title: const Text('femm'),
       ),
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Material(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Text(
-                'Care-navigation only — not a diagnosis. Edit or remove '
-                'ambiguous rows, then confirm. H/L shown only when present '
-                'on the report (never invented).',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Your health-check labs',
+                  style: theme.textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Confirm the extracted rows. We only flag H/L when the '
+                  'report includes a range — not a diagnosis.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: PetalSoft.muted,
+                  ),
+                ),
+              ],
             ),
           ),
           if (_error != null)
@@ -153,20 +164,20 @@ class _LabConfirmScreenState extends State<LabConfirmScreen> {
               padding: const EdgeInsets.all(12),
               child: Text(
                 _error!,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
+                style: TextStyle(color: theme.colorScheme.error),
               ),
             ),
           if (_confirmed)
             Padding(
               padding: const EdgeInsets.all(12),
               child: Text(
-                'Confirmed. Continue to spend categories and symptoms.',
-                style: Theme.of(context).textTheme.bodyMedium,
+                'Confirmed. Continue to your routine and symptoms.',
+                style: theme.textTheme.bodyMedium,
               ),
             ),
           Expanded(
             child: ListView.builder(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
               itemCount: visible.length,
               itemBuilder: (context, index) {
                 final row = visible[index];
@@ -196,19 +207,22 @@ class _LabConfirmScreenState extends State<LabConfirmScreen> {
                         ? const SizedBox(
                             height: 20,
                             width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
                           )
                         : Text(
                             _confirmed
                                 ? 'Labs confirmed'
-                                : 'Confirm labs (${visible.length})',
+                                : 'Confirm labs',
                           ),
                   ),
                   if (_confirmed) ...[
                     const SizedBox(height: 8),
                     OutlinedButton(
                       onPressed: _busy ? null : _continueToSpend,
-                      child: const Text('Continue to spend'),
+                      child: const Text('Continue to routine'),
                     ),
                   ],
                 ],
@@ -243,124 +257,146 @@ class _BiomarkerEditorState extends State<_BiomarkerEditor> {
   @override
   Widget build(BuildContext context) {
     final readOnly = widget.readOnly;
+    final valueText = [
+      if (row.value != null) row.value.toString(),
+      if (row.unit != null && row.unit!.isNotEmpty) row.unit,
+    ].join(' ');
+    final flagSuffix =
+        row.flag == null || row.flag!.isEmpty ? '' : ' · ${row.flag}';
+
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: TextFormField(
-                  initialValue: row.name,
-                  readOnly: readOnly,
-                  decoration: const InputDecoration(
-                    labelText: 'Test',
-                    isDense: true,
-                  ),
-                  onChanged: (v) => row.name = v,
-                ),
-              ),
-              if (widget.onDelete != null)
-                IconButton(
-                  tooltip: 'Remove row',
-                  onPressed: widget.onDelete,
-                  icon: const Icon(Icons.delete_outline),
-                ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              Expanded(
-                child: TextFormField(
-                  initialValue: row.value?.toString() ?? '',
-                  readOnly: readOnly,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                    signed: true,
-                  ),
-                  decoration: const InputDecoration(
-                    labelText: 'Result',
-                    isDense: true,
-                  ),
-                  onChanged: (v) {
-                    final t = v.trim();
-                    if (t.isEmpty) {
-                      row.value = null;
-                      return;
-                    }
-                    row.value = double.tryParse(t);
-                  },
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: TextFormField(
-                  initialValue: row.unit ?? '',
-                  readOnly: readOnly,
-                  decoration: const InputDecoration(
-                    labelText: 'Unit',
-                    isDense: true,
-                  ),
-                  onChanged: (v) =>
-                      row.unit = v.trim().isEmpty ? null : v.trim(),
-                ),
-              ),
-              const SizedBox(width: 8),
-              SizedBox(
-                width: 72,
-                child: InputDecorator(
-                  decoration: const InputDecoration(
-                    labelText: 'Flag',
-                    isDense: true,
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String?>(
-                      isExpanded: true,
-                      value: row.flag,
-                      items: const [
-                        DropdownMenuItem<String?>(
-                          value: null,
-                          child: Text('—'),
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Material(
+        color: PetalSoft.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(color: PetalSoft.ink.withValues(alpha: 0.08)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
+          child: readOnly
+              ? Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '${row.name}  $valueText$flagSuffix',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ),
+                  ],
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            initialValue: row.name,
+                            decoration: const InputDecoration(
+                              labelText: 'Test',
+                              isDense: true,
+                            ),
+                            onChanged: (v) => row.name = v,
+                          ),
                         ),
-                        DropdownMenuItem<String?>(
-                          value: 'H',
-                          child: Text('H'),
+                        if (widget.onDelete != null)
+                          IconButton(
+                            tooltip: 'Remove row',
+                            onPressed: widget.onDelete,
+                            icon: const Icon(Icons.delete_outline),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            initialValue: row.value?.toString() ?? '',
+                            keyboardType:
+                                const TextInputType.numberWithOptions(
+                              decimal: true,
+                              signed: true,
+                            ),
+                            decoration: const InputDecoration(
+                              labelText: 'Result',
+                              isDense: true,
+                            ),
+                            onChanged: (v) {
+                              final t = v.trim();
+                              if (t.isEmpty) {
+                                row.value = null;
+                                return;
+                              }
+                              row.value = double.tryParse(t);
+                            },
+                          ),
                         ),
-                        DropdownMenuItem<String?>(
-                          value: 'L',
-                          child: Text('L'),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextFormField(
+                            initialValue: row.unit ?? '',
+                            decoration: const InputDecoration(
+                              labelText: 'Unit',
+                              isDense: true,
+                            ),
+                            onChanged: (v) => row.unit =
+                                v.trim().isEmpty ? null : v.trim(),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        SizedBox(
+                          width: 72,
+                          child: InputDecorator(
+                            decoration: const InputDecoration(
+                              labelText: 'Flag',
+                              isDense: true,
+                            ),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String?>(
+                                isExpanded: true,
+                                value: row.flag,
+                                items: const [
+                                  DropdownMenuItem<String?>(
+                                    value: null,
+                                    child: Text('—'),
+                                  ),
+                                  DropdownMenuItem<String?>(
+                                    value: 'H',
+                                    child: Text('H'),
+                                  ),
+                                  DropdownMenuItem<String?>(
+                                    value: 'L',
+                                    child: Text('L'),
+                                  ),
+                                ],
+                                onChanged: (v) {
+                                  setState(() {
+                                    row.flag = v;
+                                  });
+                                },
+                              ),
+                            ),
+                          ),
                         ),
                       ],
-                      onChanged: readOnly
-                          ? null
-                          : (v) {
-                              setState(() {
-                                row.flag = v;
-                              });
-                            },
                     ),
-                  ),
+                    const SizedBox(height: 4),
+                    TextFormField(
+                      initialValue: row.refRange ?? '',
+                      decoration: const InputDecoration(
+                        labelText: 'Reference range',
+                        isDense: true,
+                        helperText:
+                            'Flag is H/L only when present — empty means no flag, not “normal”.',
+                      ),
+                      onChanged: (v) => row.refRange =
+                          v.trim().isEmpty ? null : v.trim(),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          TextFormField(
-            initialValue: row.refRange ?? '',
-            readOnly: readOnly,
-            decoration: const InputDecoration(
-              labelText: 'Reference range',
-              isDense: true,
-              helperText:
-                  'Flag is H/L only when present — empty means no flag, not “normal”.',
-            ),
-            onChanged: (v) =>
-                row.refRange = v.trim().isEmpty ? null : v.trim(),
-          ),
-          const Divider(height: 20),
-        ],
+        ),
       ),
     );
   }

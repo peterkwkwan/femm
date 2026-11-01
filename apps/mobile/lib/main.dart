@@ -10,6 +10,7 @@ import 'screens/spend_screen.dart';
 import 'screens/symptoms_screen.dart';
 import 'services/auth_service.dart';
 import 'services/intake_service.dart';
+import 'theme/petal_soft.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,13 +29,7 @@ class FemmApp extends StatelessWidget {
     return MaterialApp(
       title: 'femm',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2F5D50),
-          brightness: Brightness.light,
-        ),
-        useMaterial3: true,
-      ),
+      theme: PetalSoft.theme(),
       home: const AuthGate(),
     );
   }
@@ -118,65 +113,103 @@ class SignInShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Spacer(),
               Text(
                 'femm',
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -1,
-                    ),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: PetalSoft.accent,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.4,
+                ),
               ),
-              const SizedBox(height: 8),
-              Text(
-                'Hong Kong menopause care-navigation prototype',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'English UI only · not a diagnosis',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              if (usingPlaceholders) ...[
-                const SizedBox(height: 16),
-                Text(
-                  'Supabase placeholders active — set SUPABASE_URL, '
-                  'SUPABASE_ANON_KEY, and GOOGLE_SERVER_CLIENT_ID '
-                  '(see root README).',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.outline,
+              const SizedBox(height: 16),
+              Expanded(
+                child: ListView(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: AspectRatio(
+                        aspectRatio: 16 / 10,
+                        child: ColoredBox(
+                          color: PetalSoft.accentSoft,
+                          child: Image.asset(
+                            'assets/images/welcome-atmosphere.png',
+                            fit: BoxFit.cover,
+                            alignment: const Alignment(0, -0.35),
+                            errorBuilder: (_, __, ___) => const ColoredBox(
+                              color: PetalSoft.accentSoft,
+                            ),
+                          ),
+                        ),
                       ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Care that meets you after the health check',
+                      style: theme.textTheme.headlineMedium,
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Upload labs, share how you already look after yourself, '
+                      'and tell us what you’re dealing with. We book the next '
+                      'clinical step for you.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: PetalSoft.muted,
+                      ),
+                    ),
+                    if (usingPlaceholders) ...[
+                      const SizedBox(height: 16),
+                      Text(
+                        'Supabase placeholders active — set SUPABASE_URL, '
+                        'SUPABASE_ANON_KEY, and GOOGLE_SERVER_CLIENT_ID '
+                        '(see root README).',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: PetalSoft.muted,
+                        ),
+                      ),
+                    ],
+                    if (error != null) ...[
+                      const SizedBox(height: 16),
+                      Text(
+                        error!,
+                        style: TextStyle(color: theme.colorScheme.error),
+                      ),
+                    ],
+                  ],
                 ),
-              ],
-              const Spacer(),
-              if (error != null) ...[
-                Text(
-                  error!,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                ),
-                const SizedBox(height: 12),
-              ],
+              ),
               FilledButton(
                 onPressed: busy ? null : onGoogleSignIn,
                 child: busy
                     ? const SizedBox(
                         height: 20,
                         width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
                       )
-                    : const Text('Sign in with Google'),
+                    : const Text('Get started'),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: busy ? null : onGoogleSignIn,
+                child: Text(
+                  'Already have an account? Sign in with Google',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: PetalSoft.muted,
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -274,7 +307,7 @@ class _SignedInShellState extends State<SignedInShell> {
             if (displayName != null) Text('Name: $displayName'),
             const SizedBox(height: 16),
             Text(
-              'Path A — labs → spend → symptoms → match. '
+              'Path A — labs → routine → symptoms → match. '
               '${FemmDisclaimers.oneLiner}',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
@@ -300,7 +333,7 @@ class _SignedInShellState extends State<SignedInShell> {
                   onPressed: () => _openPath(
                     SpendScreen(session: session, intakeService: _intake),
                   ),
-                  child: const Text('Spend categories'),
+                  child: const Text('Your routine'),
                 )
               else if (!session.hasSurvey)
                 OutlinedButton(
@@ -319,8 +352,8 @@ class _SignedInShellState extends State<SignedInShell> {
               const SizedBox(height: 8),
               Text(
                 session.readyForMatch
-                    ? 'Spend + symptoms done — open match for clinical hold + upsell.'
-                    : 'Match stays locked until spend and symptoms are saved.',
+                    ? 'Routine + symptoms done — open match for clinical hold + upsell.'
+                    : 'Match stays locked until routine and symptoms are saved.',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ],

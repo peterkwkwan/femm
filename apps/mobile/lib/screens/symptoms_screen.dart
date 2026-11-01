@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/path_a_session.dart';
 import '../models/symptom_chip.dart';
 import '../services/intake_service.dart';
+import '../theme/petal_soft.dart';
 import '../widgets/path_a_step_header.dart';
 import 'match_gate_screen.dart';
 
@@ -82,27 +83,25 @@ class _SymptomsScreenState extends State<SymptomsScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Symptoms')),
+      appBar: AppBar(title: const Text('femm')),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const PathAStepHeader(step: 2, label: 'Symptoms'),
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
               children: [
                 Text(
                   'What are you dealing with right now?',
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: theme.textTheme.headlineSmall,
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Tap everything that fits. Used for care-navigation matching '
-                  'only — not a diagnosis.',
+                  'Tap everything that fits. This helps us match you with the '
+                  'right specialist.',
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                    color: PetalSoft.muted,
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -114,10 +113,21 @@ class _SymptomsScreenState extends State<SymptomsScreen> {
                       FilterChip(
                         label: Text(chip.label),
                         selected: _selected.contains(chip.key),
-                        onSelected: _busy
-                            ? null
-                            : (_) => _toggle(chip.key),
-                        showCheckmark: true,
+                        onSelected: _busy ? null : (_) => _toggle(chip.key),
+                        showCheckmark: false,
+                        selectedColor: PetalSoft.accent,
+                        labelStyle: TextStyle(
+                          color: _selected.contains(chip.key)
+                              ? Colors.white
+                              : PetalSoft.ink,
+                          fontSize: 13,
+                        ),
+                        backgroundColor: PetalSoft.surface,
+                        side: BorderSide(
+                          color: _selected.contains(chip.key)
+                              ? Colors.transparent
+                              : PetalSoft.ink.withValues(alpha: 0.18),
+                        ),
                       ),
                   ],
                 ),
@@ -141,7 +151,7 @@ class _SymptomsScreenState extends State<SymptomsScreen> {
                     '${_selected.length} selected',
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+                      color: PetalSoft.muted,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -151,7 +161,10 @@ class _SymptomsScreenState extends State<SymptomsScreen> {
                         ? const SizedBox(
                             height: 20,
                             width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
                           )
                         : const Text('Continue'),
                   ),

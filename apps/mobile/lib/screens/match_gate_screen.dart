@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../constants/disclaimers.dart';
 import '../models/path_a_session.dart';
 import '../services/intake_service.dart';
+import '../theme/petal_soft.dart';
 import '../widgets/path_a_step_header.dart';
 import 'match_screen.dart';
 import 'spend_screen.dart';
@@ -96,8 +97,9 @@ class _MatchGateScreenState extends State<MatchGateScreen> {
     final session = _session ?? widget.session;
     final ready = _labsConfirmed && session.readyForMatch;
 
+    final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Match')),
+      appBar: AppBar(title: const Text('femm')),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -106,30 +108,24 @@ class _MatchGateScreenState extends State<MatchGateScreen> {
             child: SafeArea(
               top: false,
               child: Padding(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
                 child: _loading
                     ? const Center(child: CircularProgressIndicator())
                     : Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Material(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .surfaceContainerHighest,
-                            child: Padding(
-                              padding: const EdgeInsets.all(12),
-                              child: Text(
-                                FemmDisclaimers.oneLiner,
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
+                          Text(
+                            FemmDisclaimers.oneLiner,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: PetalSoft.muted,
                             ),
                           ),
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 20),
                           if (_error != null) ...[
                             Text(
                               _error!,
                               style: TextStyle(
-                                color: Theme.of(context).colorScheme.error,
+                                color: theme.colorScheme.error,
                               ),
                             ),
                             const SizedBox(height: 16),
@@ -137,13 +133,15 @@ class _MatchGateScreenState extends State<MatchGateScreen> {
                           if (!ready) ...[
                             Text(
                               'Match is locked',
-                              style: Theme.of(context).textTheme.headlineSmall,
+                              style: theme.textTheme.headlineSmall,
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Labs must be confirmed, then finish spend '
-                              'categories and symptoms before matching can start.',
-                              style: Theme.of(context).textTheme.bodyMedium,
+                              'Labs must be confirmed, then finish your routine '
+                              'and symptoms before matching can start.',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: PetalSoft.muted,
+                              ),
                             ),
                             const SizedBox(height: 16),
                             _GateRow(
@@ -153,7 +151,7 @@ class _MatchGateScreenState extends State<MatchGateScreen> {
                             ),
                             const SizedBox(height: 8),
                             _GateRow(
-                              label: 'Spend categories',
+                              label: 'Routine',
                               done: session.hasSpend,
                               onFix:
                                   _labsConfirmed ? _busyGuard(_openSpend) : null,
@@ -168,26 +166,27 @@ class _MatchGateScreenState extends State<MatchGateScreen> {
                             ),
                           ] else ...[
                             Text(
-                              'Ready for match',
-                              style: Theme.of(context).textTheme.headlineSmall,
+                              'Your next step, held for you',
+                              style: theme.textTheme.headlineSmall,
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Spend and symptoms are saved. Next: rule-based '
-                              'clinical recommendation with a 15-minute slot '
-                              'hold and same-bucket upsell — book either path '
-                              'independently.',
-                              style: Theme.of(context).textTheme.bodyMedium,
+                              'Routine and symptoms are saved. Next: clinical '
+                              'recommendation with a 15-minute hold and optional '
+                              'extras from your routine.',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: PetalSoft.muted,
+                              ),
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              'Spend: ${session.spendBuckets.map((b) => b.label).join(', ')}',
-                              style: Theme.of(context).textTheme.bodySmall,
+                              'Routine: ${session.spendBuckets.map((b) => b.chipLabel).join(', ')}',
+                              style: theme.textTheme.bodySmall,
                             ),
                             const SizedBox(height: 8),
                             Text(
                               'Symptoms: ${session.selectedSymptomLabels.join(', ')}',
-                              style: Theme.of(context).textTheme.bodySmall,
+                              style: theme.textTheme.bodySmall,
                             ),
                             const SizedBox(height: 24),
                             FilledButton(
@@ -199,7 +198,7 @@ class _MatchGateScreenState extends State<MatchGateScreen> {
                                   ),
                                 );
                               },
-                              child: const Text('Start match'),
+                              child: const Text('See your match'),
                             ),
                           ],
                           const Spacer(),

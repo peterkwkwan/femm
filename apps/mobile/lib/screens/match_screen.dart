@@ -8,6 +8,7 @@ import '../models/match_result.dart';
 import '../models/path_a_session.dart';
 import '../models/spend_bucket.dart';
 import '../services/match_service.dart';
+import '../theme/petal_soft.dart';
 import '../widgets/path_a_step_header.dart';
 
 /// Phase 4 — clinical recommendation (15-min hold) + same-bucket upsell.
@@ -287,8 +288,9 @@ class _MatchScreenState extends State<MatchScreen>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Your match')),
+      appBar: AppBar(title: const Text('femm')),
       body: Column(
         children: [
           const PathAStepHeader(step: 3, label: 'Match'),
@@ -298,34 +300,33 @@ class _MatchScreenState extends State<MatchScreen>
                 : RefreshIndicator(
                     onRefresh: _bootstrap,
                     child: ListView(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
                       children: [
                         if (_error != null) ...[
                           Text(
                             _error!,
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.error,
-                            ),
+                            style: TextStyle(color: theme.colorScheme.error),
                           ),
                           const SizedBox(height: 12),
                         ],
+                        Text(
+                          'Your next step, held for you',
+                          style: theme.textTheme.headlineSmall,
+                        ),
+                        const SizedBox(height: 16),
                         _buildClinicalSection(context),
-                        const SizedBox(height: 28),
+                        const SizedBox(height: 24),
                         Text(
-                          'Aligned partners',
-                          style: Theme.of(context).textTheme.titleLarge,
+                          'Optional extras in your routine',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: PetalSoft.muted,
+                          ),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Only categories you already spend on. Book or skip '
-                          'independently of the clinical hold.',
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 10),
                         if (_partners.isEmpty)
                           Text(
-                            'No spend categories selected.',
-                            style: Theme.of(context).textTheme.bodyMedium,
+                            'No routine categories selected.',
+                            style: theme.textTheme.bodyMedium,
                           )
                         else
                           for (final partner in _partners) ...[
@@ -344,8 +345,7 @@ class _MatchScreenState extends State<MatchScreen>
                   ),
           ),
           Material(
-            elevation: 6,
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            color: PetalSoft.accentSoft,
             child: SafeArea(
               top: false,
               child: Padding(
@@ -353,9 +353,10 @@ class _MatchScreenState extends State<MatchScreen>
                 child: Text(
                   FemmDisclaimers.stickyMatch,
                   textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: PetalSoft.ink,
+                  ),
                 ),
               ),
             ),
@@ -366,6 +367,7 @@ class _MatchScreenState extends State<MatchScreen>
   }
 
   Widget _buildClinicalSection(BuildContext context) {
+    final theme = Theme.of(context);
     final match = _matchRow;
     final clinic = match?.clinic;
     final holdAlive = _clinical == null &&
@@ -381,168 +383,181 @@ class _MatchScreenState extends State<MatchScreen>
             match.slotId != null ||
             match.holdExpiresAt != null);
 
+    if (match == null) {
+      return Text('No match yet.', style: theme.textTheme.bodyMedium);
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          'Clinical recommendation',
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
-        const SizedBox(height: 8),
-        if (match == null)
-          const Text('No match yet.')
-        else ...[
-          Text(
-            match.specialty.label,
-            style: Theme.of(context).textTheme.headlineSmall,
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: PetalSoft.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: PetalSoft.ink.withValues(alpha: 0.08)),
           ),
-          if (clinic != null) ...[
-            const SizedBox(height: 4),
-            Text(
-              clinic.name,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            Text(
-              '${clinic.district} · ${clinic.addressLine}',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ],
-          const SizedBox(height: 12),
-          Text(
-            'Why this match',
-            style: Theme.of(context).textTheme.titleSmall,
-          ),
-          const SizedBox(height: 4),
-          Text(match.whyCopy),
-          const SizedBox(height: 12),
-          Text(
-            'Recommended slot: ${_formatSlot(match.slot)}',
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-          const SizedBox(height: 12),
-          if (_clinical != null)
-            Container(
-              padding: const EdgeInsets.all(12),
-              color: Theme.of(context).colorScheme.primaryContainer,
-              child: Text(
-                'Clinical booking confirmed.',
-                style: Theme.of(context).textTheme.titleSmall,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                _clinical != null
+                    ? 'Clinical · booked'
+                    : holdAlive
+                        ? 'Clinical · reserved ${_formatCountdown(_remaining)}'
+                        : 'Clinical recommendation',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: PetalSoft.accent,
+                  fontSize: 12,
+                ),
               ),
-            )
-          else if (holdAlive) ...[
-            Text(
-              'Hold expires in ${_formatCountdown(_remaining)}',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.primary,
+              const SizedBox(height: 6),
+              Text(
+                match.specialty.label,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              if (clinic != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  '${clinic.name} · ${clinic.district}',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: PetalSoft.muted,
                   ),
+                ),
+              ],
+              const SizedBox(height: 8),
+              Text(
+                match.whyCopy,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: PetalSoft.muted,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Slot: ${_formatSlot(match.slot)}',
+                style: theme.textTheme.bodySmall,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        if (_clinical != null)
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: PetalSoft.accentSoft,
+              borderRadius: BorderRadius.circular(12),
             ),
-            const SizedBox(height: 12),
-            FilledButton(
-              onPressed: _busyClinical ? null : _confirmClinical,
-              child: _busyClinical
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Confirm clinical booking'),
+            child: Text(
+              'Appointment booked.',
+              style: theme.textTheme.titleSmall,
             ),
-            const SizedBox(height: 4),
-            Text(
-              'Confirm is optional. You can book partners below without confirming.',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ] else if (holdExpired) ...[
-            Text(
-              'Hold expired — slot released.',
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-            const SizedBox(height: 8),
-            OutlinedButton(
-              onPressed: _loading ? null : _rehold,
-              child: const Text('Hold another slot'),
-            ),
-          ],
+          )
+        else if (holdAlive) ...[
+          FilledButton(
+            onPressed: _busyClinical ? null : _confirmClinical,
+            child: _busyClinical
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Text('Book this appointment'),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Booking is optional. You can still choose extras below.',
+            style: theme.textTheme.bodySmall,
+          ),
+        ] else if (holdExpired) ...[
+          Text(
+            'Hold expired — slot released.',
+            style: TextStyle(color: theme.colorScheme.error),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton(
+            onPressed: _loading ? null : _rehold,
+            child: const Text('Hold another slot'),
+          ),
         ],
       ],
     );
   }
 
   Widget _buildUpsellTile(BuildContext context, UpsellPartner partner) {
+    final theme = Theme.of(context);
     final bucket = SpendBucket.tryParse(partner.spendBucketDb);
     final booked = _bookedPartnerIds.contains(partner.id);
     final skipped = _skippedPartnerIds.contains(partner.id);
     final busy = _busyPartnerId == partner.id;
 
-    return DecoratedBox(
+    return Container(
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        border: Border(
-          left: BorderSide(
-            color: Theme.of(context).colorScheme.outlineVariant,
-            width: 3,
-          ),
-        ),
+        color: PetalSoft.accentSoft,
+        borderRadius: BorderRadius.circular(12),
       ),
-      child: Padding(
-        padding: const EdgeInsets.only(left: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            '${partner.name} · fits your ${bucket?.chipLabel.toLowerCase() ?? 'routine'}',
+            style: theme.textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${partner.district} · ${partner.tagline}',
+            style: theme.textTheme.bodySmall?.copyWith(color: PetalSoft.muted),
+          ),
+          const SizedBox(height: 8),
+          if (booked)
             Text(
-              partner.name,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            Text(
-              '${bucket?.label ?? partner.spendBucketDb} · ${partner.district}',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            const SizedBox(height: 4),
-            Text(partner.tagline),
-            const SizedBox(height: 8),
-            if (booked)
-              Text(
-                'Partner booking saved.',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.w600,
-                ),
-              )
-            else if (skipped)
-              Row(
-                children: [
-                  Text(
-                    'Skipped',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                  const SizedBox(width: 8),
-                  TextButton(
-                    onPressed: busy ? null : () => _bookPartner(partner),
-                    child: const Text('Book instead'),
-                  ),
-                ],
-              )
-            else
-              Row(
-                children: [
-                  FilledButton.tonal(
-                    onPressed: busy ? null : () => _bookPartner(partner),
-                    child: busy
-                        ? const SizedBox(
-                            height: 18,
-                            width: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('Book'),
-                  ),
-                  const SizedBox(width: 8),
-                  TextButton(
-                    onPressed: busy ? null : () => _skipPartner(partner),
-                    child: const Text('Skip'),
-                  ),
-                ],
+              'Partner booking saved.',
+              style: TextStyle(
+                color: PetalSoft.accent,
+                fontWeight: FontWeight.w600,
               ),
-          ],
-        ),
+            )
+          else if (skipped)
+            Row(
+              children: [
+                Text('Skipped', style: theme.textTheme.bodySmall),
+                const SizedBox(width: 8),
+                TextButton(
+                  onPressed: busy ? null : () => _bookPartner(partner),
+                  child: const Text('Book instead'),
+                ),
+              ],
+            )
+          else
+            Row(
+              children: [
+                FilledButton(
+                  onPressed: busy ? null : () => _bookPartner(partner),
+                  child: busy
+                      ? const SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text('Book'),
+                ),
+                const SizedBox(width: 8),
+                TextButton(
+                  onPressed: busy ? null : () => _skipPartner(partner),
+                  child: const Text('Skip'),
+                ),
+              ],
+            ),
+        ],
       ),
     );
   }

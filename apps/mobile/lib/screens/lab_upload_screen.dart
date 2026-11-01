@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../services/lab_service.dart';
+import '../theme/petal_soft.dart';
 import 'lab_confirm_screen.dart';
 
 /// Phase 2: pick or load the synthetic demo PDF, upload, run extract.
@@ -89,29 +90,32 @@ class _LabUploadScreenState extends State<LabUploadScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Upload lab PDF')),
+      appBar: AppBar(title: const Text('femm')),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Path A — labs',
-                style: Theme.of(context).textTheme.headlineSmall,
+                'Your health-check labs',
+                style: theme.textTheme.headlineSmall,
               ),
               const SizedBox(height: 8),
               Text(
                 'Upload a women’s health-check PDF. We extract the biomarker '
-                'table for you to confirm. Not a diagnosis.',
-                style: Theme.of(context).textTheme.bodyMedium,
+                'table for you to confirm — not a diagnosis.',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: PetalSoft.muted,
+                ),
               ),
               const SizedBox(height: 24),
               if (_error != null) ...[
                 Text(
                   _error!,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                  style: TextStyle(color: theme.colorScheme.error),
                 ),
                 const SizedBox(height: 16),
               ],
@@ -132,7 +136,7 @@ class _LabUploadScreenState extends State<LabUploadScreen> {
               Text(
                 'Original PDF is stored privately for later Path C download. '
                 'H/L flags appear only when present on the report.',
-                style: Theme.of(context).textTheme.bodySmall,
+                style: theme.textTheme.bodySmall,
               ),
             ],
           ),
