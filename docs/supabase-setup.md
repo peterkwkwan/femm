@@ -296,13 +296,15 @@ Open `http://localhost:5173`. Google button should use Supabase `signInWithOAuth
 
 ---
 
-## Step 8 — Edge Functions note (Phase 2, not required for 0.5 exit)
+## Step 8 — Edge Functions (Phase 2)
 
-PDF lab-table extract will be a **Supabase Edge Function** on the free tier (Phase 2). For Phase 0.5 you only need Auth + Postgres + Storage wired. When you get there:
+PDF lab-table extract is Edge Function `extract-lab-pdf` on the free tier. Phase 0.5 only needs Auth + Postgres + Storage; Phase 2 adds the function + `lab_documents` migration.
 
-- Deploy with Supabase CLI (`supabase functions deploy ...`).
-- Use **service role** only inside the function secret store — never in the client.
-- Keep extract deterministic against the Phase 1 golden fixture.
+Full deploy + smoke: [`phase2-lab-extract.md`](./phase2-lab-extract.md).
+
+- Deploy: `npx supabase functions deploy extract-lab-pdf`
+- Caller uses the **user JWT** (RLS); do not put **service_role** in the Flutter/portal clients.
+- Offline check: `npm run test:extract-fixture` against the Phase 1 golden fixture.
 
 ---
 
