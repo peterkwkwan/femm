@@ -12,11 +12,27 @@ begin;
 
 -- Wipe demo supply + dependent Phase 4/5 booking rows (FK order).
 -- Does NOT touch auth.users, Storage objects, lab docs, or Path A intake answers.
-delete from public.summary_packs where true;
-delete from public.upsell_bookings where true;
-delete from public.clinical_bookings where true;
-delete from public.path_a_matches where true;
-update public.profiles set clinic_id = null where clinic_id is not null;
+-- Safe if later-phase tables/columns are not applied yet.
+do $$ begin
+  delete from public.summary_packs;
+exception when undefined_table then null;
+end $$;
+do $$ begin
+  delete from public.upsell_bookings;
+exception when undefined_table then null;
+end $$;
+do $$ begin
+  delete from public.clinical_bookings;
+exception when undefined_table then null;
+end $$;
+do $$ begin
+  delete from public.path_a_matches;
+exception when undefined_table then null;
+end $$;
+do $$ begin
+  update public.profiles set clinic_id = null where clinic_id is not null;
+exception when undefined_column then null;
+end $$;
 delete from public.appointment_slots;
 delete from public.clinics;
 delete from public.upsell_partners;
