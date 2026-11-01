@@ -32,7 +32,7 @@ Creates:
 
 ## Reset demo supply (repeatable)
 
-Wipes and reloads **only** fictional clinics, slots, and upsell partners. Leaves Auth users, `profiles`, and Storage alone. Slots are scheduled relative to **today (Asia/Hong_Kong)** so a reset always yields future bookable times.
+Wipes and reloads fictional clinics, slots, and upsell partners. Also clears Phase 4/5 bookings/packs and nulls `profiles.clinic_id` so clinic FKs can reset. Leaves Auth users, Storage, and lab intake alone. Slots are scheduled relative to **today (Asia/Hong_Kong)** so a reset always yields future bookable times.
 
 ### Option A — Dashboard (simplest)
 

@@ -1,8 +1,10 @@
 # femm practitioner portal
 
-Thin Vite + TypeScript stub with Google Auth via **Supabase**. Appointments and Path C packs arrive in Phase 5.
+Thin Vite + TypeScript Path C portal with Google Auth via **Supabase**.
 
-See the [repo root README](../../README.md) for env vars and project setup.
+After Phase 5: claim a fictional clinic → upcoming clinical appointments → scannable summary pack → expand labs → download original PDF. Access is booking-scoped (auth’d booked practitioner only).
+
+See the [repo root README](../../README.md) and [`docs/phase5-path-c-portal.md`](../../docs/phase5-path-c-portal.md).
 
 ```bash
 cp .env.example .env.local

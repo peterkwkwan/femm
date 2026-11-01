@@ -307,7 +307,8 @@ Full deploy + smoke: [`phase2-lab-extract.md`](./phase2-lab-extract.md).
 - Offline check: `npm run test:extract-fixture` against the Phase 1 golden fixture.
 
 After Phase 2, apply Phase 3 spend/survey SQL (`20261101160000_phase3_spend_and_survey.sql`) — see [`phase3-spend-survey.md`](./phase3-spend-survey.md).  
-After Phase 3, apply Phase 4 match/hold/upsell SQL (`20261101180000_phase4_match_hold_upsell.sql`) — see [`phase4-match-hold-upsell.md`](./phase4-match-hold-upsell.md).
+After Phase 3, apply Phase 4 match/hold/upsell SQL (`20261101180000_phase4_match_hold_upsell.sql`) — see [`phase4-match-hold-upsell.md`](./phase4-match-hold-upsell.md).  
+After Phase 4, apply Phase 5 Path C SQL (`20261101200000_phase5_path_c_summary_packs.sql`) — see [`phase5-path-c-portal.md`](./phase5-path-c-portal.md).
 
 ---
 

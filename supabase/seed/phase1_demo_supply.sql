@@ -2,14 +2,21 @@
 -- Clears and reloads fictional clinics, slots, and upsell partners.
 -- Stable UUIDs so docs / later phases can reference fixed IDs.
 --
--- Does NOT touch auth.users, profiles, Storage, or lab uploads.
+-- Does NOT touch auth.users, Storage, or lab uploads.
+-- Clears Phase 4/5 booking/pack rows and nulls profiles.clinic_id so clinic FK reset works.
 --
 -- Apply after schema migration 20261101120000_phase1_clinical_and_upsell_supply.sql
 -- See docs/phase1-demo-seed.md for how Peter loads this.
 
 begin;
 
--- Wipe demo supply only (FK: slots → clinics)
+-- Wipe demo supply + dependent Phase 4/5 booking rows (FK order).
+-- Does NOT touch auth.users, Storage objects, lab docs, or Path A intake answers.
+delete from public.summary_packs where true;
+delete from public.upsell_bookings where true;
+delete from public.clinical_bookings where true;
+delete from public.path_a_matches where true;
+update public.profiles set clinic_id = null where clinic_id is not null;
 delete from public.appointment_slots;
 delete from public.clinics;
 delete from public.upsell_partners;

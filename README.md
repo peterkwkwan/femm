@@ -3,7 +3,7 @@
 Hong Kong menopause **care-navigation** prototype (not a diagnosis).  
 Stack lock: **Flutter Android** user client · **thin web** practitioner portal · **Supabase** (Auth + Postgres + Storage) · **Google Auth** for users and practitioners.
 
-Phase 0.5 cut Firebase over to Supabase free tier. **Phase 1** seeded supply + synthetic PDF. **Phase 2** PDF upload → extract → confirm. **Phase 3** spend multi-select + ≤8-question survey + match gate. **Phase 4** rule-based match + 15-min hold + same-bucket upsell.
+Phase 0.5 cut Firebase over to Supabase free tier. **Phase 1** seeded supply + synthetic PDF. **Phase 2** PDF upload → extract → confirm. **Phase 3** spend multi-select + ≤8-question survey + match gate. **Phase 4** rule-based match + 15-min hold + same-bucket upsell. **Phase 5** Path C summary packs + practitioner portal.
 
 ## Repo layout
 
@@ -11,7 +11,7 @@ Phase 0.5 cut Firebase over to Supabase free tier. **Phase 1** seeded supply + s
 | --- | --- |
 | `apps/mobile` | Flutter Android user app (`supabase_flutter`) |
 | `apps/portal` | Vite + TypeScript practitioner portal (`@supabase/supabase-js`) |
-| `supabase/migrations` | Postgres schema + RLS (`profiles`, clinics/slots/upsell, lab docs, `lab-pdfs`) |
+| `supabase/migrations` | Postgres schema + RLS (`profiles`, clinics/slots/upsell, lab docs, match/bookings, Path C `summary_packs`, `lab-pdfs`) |
 | `supabase/functions` | Edge Functions (`extract-lab-pdf`) |
 | `supabase/seed` | Idempotent Phase 1 demo supply reset SQL |
 | `fixtures/labs` | Synthetic HK women’s panel PDF + golden extract JSON |
@@ -41,8 +41,9 @@ Full click-path (Google OAuth, redirects, SHA-1, SQL, bucket): **[`docs/supabase
 8. **Phase 2:** run `20261101140000_phase2_lab_documents.sql`, then deploy `extract-lab-pdf` — see **[`docs/phase2-lab-extract.md`](./docs/phase2-lab-extract.md)**.
 9. **Phase 3:** run `20261101160000_phase3_spend_and_survey.sql` — see **[`docs/phase3-spend-survey.md`](./docs/phase3-spend-survey.md)**.
 10. **Phase 4:** run `20261101180000_phase4_match_hold_upsell.sql` — see **[`docs/phase4-match-hold-upsell.md`](./docs/phase4-match-hold-upsell.md)**.
-11. Portal: copy `apps/portal/.env.example` → `apps/portal/.env.local` and fill `VITE_SUPABASE_*`.
-12. Mobile: pass dart-defines (or copy `apps/mobile/dart_defines.example.json` → `dart_defines.json`, gitignored):
+11. **Phase 5:** run `20261101200000_phase5_path_c_summary_packs.sql` — see **[`docs/phase5-path-c-portal.md`](./docs/phase5-path-c-portal.md)**.
+12. Portal: copy `apps/portal/.env.example` → `apps/portal/.env.local` and fill `VITE_SUPABASE_*`.
+13. Mobile: pass dart-defines (or copy `apps/mobile/dart_defines.example.json` → `dart_defines.json`, gitignored):
 
    ```bash
    cd apps/mobile
@@ -90,7 +91,8 @@ npm run dev
 ```
 
 Or from root: `npm run portal:dev`. Open `http://localhost:5173`.  
-Google button uses Supabase `signInWithOAuth({ provider: 'google' })`.
+Google Auth → claim a demo clinic → upcoming appointments → Path C summary / labs / PDF.  
+Smoke: **[`docs/phase5-path-c-portal.md`](./docs/phase5-path-c-portal.md)**.
 
 ## Phase 0.5 acceptance
 
@@ -154,9 +156,25 @@ Acceptance:
 - [x] 4.6 Clinical only / upsell only / both / neither all leave session valid
 - [ ] Peter: apply Phase 4 SQL (+ re-seed slots if needed) (outside git)
 
+## Phase 5 — Path C summary + practitioner portal
+
+On clinical (and lighter upsell) booking, a `summary_packs` snapshot is written. Booked clinic practitioners Google-auth into the portal, claim their fictional clinic, open upcoming appointments, expand labs, download the original PDF. RLS + Storage policies block unbooked / other clinics.
+
+Peter apply + smoke: **[`docs/phase5-path-c-portal.md`](./docs/phase5-path-c-portal.md)**
+
+Acceptance:
+
+- [x] 5.1 Summary pack on booking (goals, spend, match reason, flagged labs, path tag, disclaimer)
+- [x] 5.2 Practitioner Google Auth + clinic link (`claim_demo_clinic`)
+- [x] 5.3 Upcoming appointments for auth’d clinic only
+- [x] 5.4 Scannable summary → expand full labs
+- [x] 5.5 Original PDF download
+- [x] 5.6 Booking-scoped RLS + Storage select for booked practitioners
+- [ ] Peter: apply Phase 5 SQL (outside git)
+
 ## Explicitly not in this build (yet)
 
-Path B, wearables, iOS day-one, real partner inventory, imaging OCR/AI, diagnosis/HRT claims, bilingual UI, Path C practitioner pack (Phase 5).
+Path B, wearables, iOS day-one, real partner inventory, imaging OCR/AI, diagnosis/HRT claims, bilingual UI, demo hardening (Phase 6).
 
 Firebase / Blaze is abandoned for this prototype — do not re-enable Storage on Blaze.
 
