@@ -3,11 +3,12 @@ import 'package:flutter/material.dart';
 import '../models/path_a_session.dart';
 import '../models/survey_question.dart';
 import '../services/intake_service.dart';
+import 'match_screen.dart';
 import 'spend_screen.dart';
 import 'survey_screen.dart';
 
 /// Phase 3.3 — Match entry is gated until spend + survey are complete.
-/// Phase 4 will replace the ready body with rule-based match + hold UI.
+/// Phase 4 — ready state opens rule-based match + 15-min hold + upsell.
 class MatchGateScreen extends StatefulWidget {
   const MatchGateScreen({
     super.key,
@@ -111,8 +112,7 @@ class _MatchGateScreenState extends State<MatchGateScreen> {
                       child: Padding(
                         padding: const EdgeInsets.all(12),
                         child: Text(
-                          'Care-navigation only — not a diagnosis. Clinical '
-                          'match and upsell arrive in Phase 4.',
+                          'Care-navigation only — not a diagnosis.',
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ),
@@ -165,9 +165,9 @@ class _MatchGateScreenState extends State<MatchGateScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Spend and survey are saved. Phase 4 will show the '
-                        'rule-based clinical recommendation, 15-minute hold, '
-                        'and same-bucket upsell here.',
+                        'Spend and survey are saved. Next: rule-based clinical '
+                        'recommendation with a 15-minute slot hold and '
+                        'same-bucket upsell — book either path independently.',
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                       const SizedBox(height: 16),
@@ -181,9 +181,15 @@ class _MatchGateScreenState extends State<MatchGateScreen> {
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                       const SizedBox(height: 24),
-                      const FilledButton(
-                        onPressed: null,
-                        child: Text('Start match (Phase 4)'),
+                      FilledButton(
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => MatchScreen(session: session),
+                            ),
+                          );
+                        },
+                        child: const Text('Start match'),
                       ),
                     ],
                     const Spacer(),

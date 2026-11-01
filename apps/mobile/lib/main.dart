@@ -318,7 +318,7 @@ class _SignedInShellState extends State<SignedInShell> {
               const SizedBox(height: 8),
               Text(
                 session.readyForMatch
-                    ? 'Spend + survey done — match entry unlocked (Phase 4 UI next).'
+                    ? 'Spend + survey done — open match for clinical hold + upsell.'
                     : 'Match stays locked until spend and survey are saved.',
                 style: Theme.of(context).textTheme.bodySmall,
               ),

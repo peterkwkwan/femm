@@ -29,7 +29,7 @@ Confirm under **Table Editor**: `path_a_sessions`, `path_a_spend_selections`, `p
 2. **Upload lab PDF** / **Use synthetic demo PDF** → confirm labs.
 3. On **Spend categories**, select ≥1 bucket → **Continue**.
 4. Answer all **8** survey questions → **Save survey & continue**.
-5. **Match** screen shows **Ready for match** (Phase 4 button stays disabled until Phase 4).
+5. **Match** screen shows **Ready for match** → **Start match** opens Phase 4 hold/upsell UI (after Phase 4 SQL is applied).
 6. Dashboard → Table Editor:
    - `path_a_sessions.spend_completed_at` and `survey_completed_at` set
    - `path_a_spend_selections` rows for chosen buckets

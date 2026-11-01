@@ -3,7 +3,7 @@
 Hong Kong menopause **care-navigation** prototype (not a diagnosis).  
 Stack lock: **Flutter Android** user client · **thin web** practitioner portal · **Supabase** (Auth + Postgres + Storage) · **Google Auth** for users and practitioners.
 
-Phase 0.5 cut Firebase over to Supabase free tier. **Phase 1** seeded supply + synthetic PDF. **Phase 2** PDF upload → extract → confirm. **Phase 3** spend multi-select + ≤8-question survey + match gate.
+Phase 0.5 cut Firebase over to Supabase free tier. **Phase 1** seeded supply + synthetic PDF. **Phase 2** PDF upload → extract → confirm. **Phase 3** spend multi-select + ≤8-question survey + match gate. **Phase 4** rule-based match + 15-min hold + same-bucket upsell.
 
 ## Repo layout
 
@@ -40,8 +40,9 @@ Full click-path (Google OAuth, redirects, SHA-1, SQL, bucket): **[`docs/supabase
 7. **Phase 1 schema + seed** (after 0.5 SQL): run `20261101120000_phase1_clinical_and_upsell_supply.sql`, then reset demo supply — see **[`docs/phase1-demo-seed.md`](./docs/phase1-demo-seed.md)**.
 8. **Phase 2:** run `20261101140000_phase2_lab_documents.sql`, then deploy `extract-lab-pdf` — see **[`docs/phase2-lab-extract.md`](./docs/phase2-lab-extract.md)**.
 9. **Phase 3:** run `20261101160000_phase3_spend_and_survey.sql` — see **[`docs/phase3-spend-survey.md`](./docs/phase3-spend-survey.md)**.
-10. Portal: copy `apps/portal/.env.example` → `apps/portal/.env.local` and fill `VITE_SUPABASE_*`.
-11. Mobile: pass dart-defines (or copy `apps/mobile/dart_defines.example.json` → `dart_defines.json`, gitignored):
+10. **Phase 4:** run `20261101180000_phase4_match_hold_upsell.sql` — see **[`docs/phase4-match-hold-upsell.md`](./docs/phase4-match-hold-upsell.md)**.
+11. Portal: copy `apps/portal/.env.example` → `apps/portal/.env.local` and fill `VITE_SUPABASE_*`.
+12. Mobile: pass dart-defines (or copy `apps/mobile/dart_defines.example.json` → `dart_defines.json`, gitignored):
 
    ```bash
    cd apps/mobile
@@ -137,9 +138,25 @@ Acceptance:
 - [x] 3.3 Match unreachable until labs confirmed path has spend + survey complete
 - [ ] Peter: apply Phase 3 SQL (outside git)
 
+## Phase 4 — Match / hold / upsell
+
+Rule-based clinical specialty + canned why-copy, 15-minute auto-hold on a Phase 1 seed slot, same-bucket upsell on one screen. Clinical and upsell book independently. Sticky not-a-diagnosis disclaimer.
+
+Peter apply + smoke: **[`docs/phase4-match-hold-upsell.md`](./docs/phase4-match-hold-upsell.md)**
+
+Acceptance:
+
+- [x] 4.1 Rule-based match engine + canned why-copy (no LLM)
+- [x] 4.2 Match screen: clinical primary, upsell secondary, sticky disclaimer
+- [x] 4.3 15-minute auto-hold with countdown; expired hold releases slot
+- [x] 4.4 Explicit confirm → clinical booking (independent of upsell)
+- [x] 4.5 Same-bucket upsell cards (Phase 1 partners); book / skip independently
+- [x] 4.6 Clinical only / upsell only / both / neither all leave session valid
+- [ ] Peter: apply Phase 4 SQL (+ re-seed slots if needed) (outside git)
+
 ## Explicitly not in this build (yet)
 
-Path B, wearables, iOS day-one, real partner inventory, imaging OCR/AI, diagnosis/HRT claims, bilingual UI, match/hold UI (Phase 4).
+Path B, wearables, iOS day-one, real partner inventory, imaging OCR/AI, diagnosis/HRT claims, bilingual UI, Path C practitioner pack (Phase 5).
 
 Firebase / Blaze is abandoned for this prototype — do not re-enable Storage on Blaze.
 

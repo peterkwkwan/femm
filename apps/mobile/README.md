@@ -1,6 +1,6 @@
 # femm mobile (Flutter / Android)
 
-User client for the femm prototype. Auth is **Supabase** (Google via ID token). Path A: upload lab PDF → extract → confirm → spend → survey → match gate. See the [repo root README](../../README.md), [`docs/phase2-lab-extract.md`](../../docs/phase2-lab-extract.md), and [`docs/phase3-spend-survey.md`](../../docs/phase3-spend-survey.md).
+User client for the femm prototype. Auth is **Supabase** (Google via ID token). Path A: upload lab PDF → extract → confirm → spend → survey → match (15-min hold + upsell). See the [repo root README](../../README.md), [`docs/phase3-spend-survey.md`](../../docs/phase3-spend-survey.md), and [`docs/phase4-match-hold-upsell.md`](../../docs/phase4-match-hold-upsell.md).
 
 ```bash
 flutter pub get
