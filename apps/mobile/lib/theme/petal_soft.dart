@@ -94,7 +94,9 @@ abstract final class PetalSoft {
           foregroundColor: Colors.white,
           disabledBackgroundColor: accent.withValues(alpha: 0.35),
           disabledForegroundColor: Colors.white70,
-          minimumSize: const Size.fromHeight(48),
+          // Use a finite width — Size.fromHeight(48) is infinite-wide and
+          // asserts when a FilledButton sits in a Row (match upsell actions).
+          minimumSize: const Size(64, 48),
           shape: const StadiumBorder(),
           textStyle: const TextStyle(
             fontSize: 15,
@@ -105,7 +107,7 @@ abstract final class PetalSoft {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: ink,
-          minimumSize: const Size.fromHeight(48),
+          minimumSize: const Size(64, 48),
           side: BorderSide(color: ink.withValues(alpha: 0.18)),
           shape: const StadiumBorder(),
         ),

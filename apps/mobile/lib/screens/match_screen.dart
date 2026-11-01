@@ -135,23 +135,31 @@ class _MatchScreenState extends State<MatchScreen>
     final match = _matchRow;
     final until = match?.holdExpiresAt;
     if (_clinical != null || until == null || _holdExpiredLocal) {
-      setState(() => _remaining = Duration.zero);
+      if (_remaining != Duration.zero && mounted) {
+        setState(() => _remaining = Duration.zero);
+      }
       return;
     }
     void tick() {
       final left = until.difference(DateTime.now().toUtc());
       if (!mounted) return;
-      setState(() {
-        _remaining = left.isNegative ? Duration.zero : left;
-      });
+      final next = left.isNegative ? Duration.zero : left;
+      if (next != _remaining) {
+        setState(() => _remaining = next);
+      }
       if (left.isNegative || left == Duration.zero) {
         _ticker?.cancel();
         unawaited(_onHoldCountdownExpired());
       }
     }
 
-    tick();
-    _ticker = Timer.periodic(const Duration(seconds: 1), (_) => tick());
+    // Defer the first tick so we never setState during the bootstrap build.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      tick();
+      _ticker?.cancel();
+      _ticker = Timer.periodic(const Duration(seconds: 1), (_) => tick());
+    });
   }
 
   /// Expire/release: free inventory promptly when countdown hits zero on-screen.
@@ -538,6 +546,13 @@ class _MatchScreenState extends State<MatchScreen>
             Row(
               children: [
                 FilledButton(
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size(0, 40),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                  ),
                   onPressed: busy ? null : () => _bookPartner(partner),
                   child: busy
                       ? const SizedBox(
