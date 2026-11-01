@@ -160,7 +160,7 @@ class _LabConfirmScreenState extends State<LabConfirmScreen> {
             Padding(
               padding: const EdgeInsets.all(12),
               child: Text(
-                'Confirmed. Continue to spend categories and survey.',
+                'Confirmed. Continue to spend categories and symptoms.',
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
             ),

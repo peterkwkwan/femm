@@ -2,14 +2,17 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/path_a_session.dart';
 import '../models/spend_bucket.dart';
-import '../models/survey_question.dart';
+import '../models/symptom_chip.dart';
+import 'match_engine.dart';
 
-/// Persist Path A spend + survey (Phase 3) and gate readiness for match.
+/// Persist Path A spend + symptoms and gate readiness for match.
 class IntakeService {
-  IntakeService({SupabaseClient? client})
-      : _client = client ?? Supabase.instance.client;
+  IntakeService({SupabaseClient? client, MatchEngine matchEngine = const MatchEngine()})
+      : _client = client ?? Supabase.instance.client,
+        _matchEngine = matchEngine;
 
   final SupabaseClient _client;
+  final MatchEngine _matchEngine;
 
   String get _uid {
     final id = _client.auth.currentUser?.id;
@@ -111,23 +114,42 @@ class IntakeService {
     return session;
   }
 
-  /// Persist all survey answers (must cover every locked question) and mark complete.
-  Future<PathASession> saveSurvey({
+  /// Persist selected symptom chips into `path_a_survey_answers` and mark complete.
+  ///
+  /// Storage map (reuse existing table, no new columns):
+  /// - one row per selected chip: `question_key` = chip key, `answer` = chip label
+  /// - one `primary_goal` row derived from the rule-based specialty for Path C
+  Future<PathASession> saveSymptoms({
     required String sessionId,
-    required Map<String, String> answers,
+    required Set<String> selectedKeys,
   }) async {
-    for (final q in kSurveyQuestions) {
-      final a = answers[q.key]?.trim();
-      if (a == null || a.isEmpty) {
-        throw ArgumentError('Missing answer for ${q.key}');
-      }
-      if (!q.options.contains(a)) {
-        throw ArgumentError('Invalid answer for ${q.key}');
-      }
+    if (selectedKeys.isEmpty) {
+      throw ArgumentError('Select at least one symptom');
     }
-    if (answers.length != kSurveyQuestions.length) {
-      throw ArgumentError('Survey must answer exactly ${kSurveyQuestions.length} questions');
+
+    final chips = <SymptomChip>[];
+    for (final key in selectedKeys) {
+      final chip = SymptomChip.tryParse(key);
+      if (chip == null) {
+        throw ArgumentError('Unknown symptom chip: $key');
+      }
+      chips.add(chip);
     }
+    // Stable insert order matching locked chip list.
+    chips.sort(
+      (a, b) => kSymptomChips
+          .indexWhere((c) => c.key == a.key)
+          .compareTo(kSymptomChips.indexWhere((c) => c.key == b.key)),
+    );
+
+    final provisionalAnswers = <String, String>{
+      for (final chip in chips) chip.key: chip.label,
+    };
+    final recommendation = _matchEngine.recommend(
+      surveyAnswers: provisionalAnswers,
+    );
+    provisionalAnswers[kPrimaryGoalAnswerKey] =
+        primaryGoalForSpecialty(recommendation.specialty);
 
     final uid = _uid;
     final now = DateTime.now().toUtc().toIso8601String();
@@ -139,13 +161,13 @@ class IntakeService {
         .eq('user_id', uid);
 
     await _client.from('path_a_survey_answers').insert(
-          kSurveyQuestions
+          provisionalAnswers.entries
               .map(
-                (q) => <String, dynamic>{
+                (e) => <String, dynamic>{
                   'session_id': sessionId,
                   'user_id': uid,
-                  'question_key': q.key,
-                  'answer': answers[q.key]!.trim(),
+                  'question_key': e.key,
+                  'answer': e.value,
                   'updated_at': now,
                 },
               )
@@ -159,12 +181,12 @@ class IntakeService {
 
     final session = await fetchSession(sessionId);
     if (session == null) {
-      throw StateError('Session missing after survey save');
+      throw StateError('Session missing after symptoms save');
     }
     return session;
   }
 
-  /// True only when linked labs are confirmed and spend + survey are complete.
+  /// True only when linked labs are confirmed and spend + symptoms are complete.
   Future<bool> isReadyForMatch(String sessionId) async {
     final session = await fetchSession(sessionId);
     if (session == null || !session.readyForMatch) return false;

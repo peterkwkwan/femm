@@ -302,13 +302,23 @@ function renderPack(
   error?: string,
 ): void {
   const primaryGoal = pack.goals.primary_goal?.trim() || '—';
+  const symptoms = (pack.goals.symptoms ?? []).filter(
+    (s) => typeof s === 'string' && s.trim().length > 0,
+  );
   const answers = pack.goals.answers ?? {};
-  const answerRows = Object.entries(answers)
-    .map(
-      ([k, v]) =>
-        `<li><span class="k">${esc(k)}</span> <span class="v">${esc(v)}</span></li>`,
-    )
+  const symptomRows = symptoms
+    .map((s) => `<li>${esc(s)}</li>`)
     .join('');
+  // Prefer symptoms list; fall back to raw answer map (legacy ≤8 Q rows).
+  const answerRows =
+    symptomRows ||
+    Object.entries(answers)
+      .filter(([k]) => k !== 'primary_goal')
+      .map(
+        ([k, v]) =>
+          `<li><span class="k">${esc(k)}</span> <span class="v">${esc(v)}</span></li>`,
+      )
+      .join('');
 
   const spend = (pack.spend_buckets ?? [])
     .map((b) => SPEND_LABELS[b] ?? b)
@@ -360,9 +370,13 @@ function renderPack(
       ${error ? `<p class="error">${esc(error)}</p>` : ''}
 
       <section class="pack-block">
-        <h2>Goals</h2>
+        <h2>Goals / symptoms</h2>
         <p class="primary-goal">${esc(primaryGoal)}</p>
-        ${answerRows ? `<ul class="kv-list">${answerRows}</ul>` : ''}
+        ${
+          answerRows
+            ? `<ul class="${symptoms.length ? 'plain-list' : 'kv-list'}">${answerRows}</ul>`
+            : ''
+        }
       </section>
 
       <section class="pack-block">

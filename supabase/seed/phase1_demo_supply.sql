@@ -65,7 +65,7 @@ insert into public.clinics (
   'Calm Peak Sleep & Mood Studio',
   'Causeway Bay',
   '5/F, Mock Mall, 500 Hennessy Road',
-  'Matched for sleep and mood-focused consult when survey goals emphasise insomnia, anxiety, or low mood.'
+  'Matched for sleep and mood-focused consult when selected symptoms emphasise insomnia, anxiety, or low mood.'
 ),
 (
   '11111111-1111-4111-8111-111111111104',

@@ -41,6 +41,8 @@ export interface SummaryPack {
   disclaimer: string;
   goals: {
     primary_goal?: string;
+    /** Selected symptom chip labels from Path A multi-select. */
+    symptoms?: string[];
     answers?: Record<string, string>;
   };
   spend_buckets: string[];

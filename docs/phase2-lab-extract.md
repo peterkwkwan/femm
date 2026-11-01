@@ -81,4 +81,4 @@ Show **H** / **L** only when the extract (or user edit) supplies them. Do not co
 
 ## Not in Phase 2
 
-Spend/survey (Phase 3), match/hold (Phase 4), practitioner pack (Phase 5).
+Spend/symptoms (Phase 3), match/hold (Phase 4), practitioner pack (Phase 5).

@@ -8,6 +8,7 @@ import '../models/match_result.dart';
 import '../models/path_a_session.dart';
 import '../models/spend_bucket.dart';
 import '../services/match_service.dart';
+import '../widgets/path_a_step_header.dart';
 
 /// Phase 4 — clinical recommendation (15-min hold) + same-bucket upsell.
 /// Phase 6 — hold expire/release, double-confirm, leave-and-return hardening.
@@ -290,6 +291,7 @@ class _MatchScreenState extends State<MatchScreen>
       appBar: AppBar(title: const Text('Your match')),
       body: Column(
         children: [
+          const PathAStepHeader(step: 3, label: 'Match'),
           Expanded(
             child: _loading
                 ? const Center(child: CircularProgressIndicator())

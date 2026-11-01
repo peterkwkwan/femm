@@ -3,7 +3,7 @@
 Hong Kong menopause **care-navigation** prototype (not a diagnosis).  
 Stack lock: **Flutter Android** user client · **thin web** practitioner portal · **Supabase** (Auth + Postgres + Storage) · **Google Auth** for users and practitioners.
 
-Phase 0.5 cut Firebase over to Supabase free tier. **Phase 1** seeded supply + synthetic PDF. **Phase 2** PDF upload → extract → confirm. **Phase 3** spend multi-select + ≤8-question survey + match gate. **Phase 4** rule-based match + 15-min hold + same-bucket upsell. **Phase 5** Path C summary packs + practitioner portal. **Phase 6** demo script, hold edge-case hardening, disclaimer audit, Android smoke notes, deferral checklist.
+Phase 0.5 cut Firebase over to Supabase free tier. **Phase 1** seeded supply + synthetic PDF. **Phase 2** PDF upload → extract → confirm. **Phase 3** spend multi-select + symptoms chips + match gate (step counter Spend / Symptoms / Match). **Phase 4** rule-based match + 15-min hold + same-bucket upsell. **Phase 5** Path C summary packs + practitioner portal. **Phase 6** demo script, hold edge-case hardening, disclaimer audit, Android smoke notes, deferral checklist.
 
 ## Repo layout
 
@@ -39,7 +39,7 @@ Full click-path (Google OAuth, redirects, SHA-1, SQL, bucket): **[`docs/supabase
 6. Run SQL in `supabase/migrations/20261031140000_profiles_and_lab_pdfs.sql` (profiles RLS + private `lab-pdfs` bucket).
 7. **Phase 1 schema + seed** (after 0.5 SQL): run `20261101120000_phase1_clinical_and_upsell_supply.sql`, then reset demo supply — see **[`docs/phase1-demo-seed.md`](./docs/phase1-demo-seed.md)**.
 8. **Phase 2:** run `20261101140000_phase2_lab_documents.sql`, then deploy `extract-lab-pdf` — see **[`docs/phase2-lab-extract.md`](./docs/phase2-lab-extract.md)**.
-9. **Phase 3:** run `20261101160000_phase3_spend_and_survey.sql` — see **[`docs/phase3-spend-survey.md`](./docs/phase3-spend-survey.md)**.
+9. **Phase 3:** run `20261101160000_phase3_spend_and_survey.sql` (and later `20261102100000_path_a_symptoms_chips.sql` after Phase 5) — see **[`docs/phase3-spend-survey.md`](./docs/phase3-spend-survey.md)**.
 10. **Phase 4:** run `20261101180000_phase4_match_hold_upsell.sql` — see **[`docs/phase4-match-hold-upsell.md`](./docs/phase4-match-hold-upsell.md)**.
 11. **Phase 5:** run `20261101200000_phase5_path_c_summary_packs.sql` — see **[`docs/phase5-path-c-portal.md`](./docs/phase5-path-c-portal.md)**.
 12. Portal: copy `apps/portal/.env.example` → `apps/portal/.env.local` and fill `VITE_SUPABASE_*`.
@@ -127,17 +127,17 @@ Acceptance:
 - [x] 2.5 Fixture test vs golden JSON
 - [ ] Peter: apply Phase 2 SQL + `supabase functions deploy extract-lab-pdf` (outside git)
 
-## Phase 3 — Spend + survey + match gate
+## Phase 3 — Spend + symptoms + match gate
 
-After labs confirm: multi-select six spend buckets (≥1), answer 8 clinical + skin/hair questions, persist both. Match screen stays locked until spend + survey complete.
+After labs confirm: multi-select six spend buckets (≥1), multi-select menopause symptom chips (≥1), persist both (chips map into `path_a_survey_answers`). Step counter: **STEP X OF 3 · SPEND / SYMPTOMS / MATCH**. Match stays locked until spend + symptoms complete.
 
 Peter apply + smoke: **[`docs/phase3-spend-survey.md`](./docs/phase3-spend-survey.md)**
 
 Acceptance:
 
 - [x] 3.1 Spend multi-select (six locked buckets, ≥1, saved on Path A session)
-- [x] 3.2 Survey ≤8 Qs (clinical + skin/hair) persisted
-- [x] 3.3 Match unreachable until labs confirmed path has spend + survey complete
+- [x] 3.2 Symptoms multi-select chips persisted (replaces ≤8 Q survey)
+- [x] 3.3 Match unreachable until labs confirmed path has spend + symptoms complete
 - [ ] Peter: apply Phase 3 SQL (outside git)
 
 ## Phase 4 — Match / hold / upsell

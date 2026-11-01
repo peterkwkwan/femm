@@ -1,6 +1,6 @@
 # Phase 4 — Rule-based match, 15-min hold, upsell
 
-After spend + survey, the user opens the match screen: one clinical specialty (deterministic rules + canned why-copy), a **15-minute auto-hold** on a Phase 1 seed slot, and same-bucket upsell partners. Clinical and upsell book **independently**. Sticky “not a diagnosis” disclaimer stays on the match screen.
+After spend + symptoms, the user opens the match screen: one clinical specialty (deterministic rules + canned why-copy), a **15-minute auto-hold** on a Phase 1 seed slot, and same-bucket upsell partners. Clinical and upsell book **independently**. Sticky “not a diagnosis” disclaimer stays on the match screen.
 
 **Prerequisite:** Phase 1 seed loaded, Phase 3 migration applied.
 
@@ -9,7 +9,7 @@ After spend + survey, the user opens the match screen: one clinical specialty (d
 | Piece | Location |
 | --- | --- |
 | Schema + RPCs | `supabase/migrations/20261101180000_phase4_match_hold_upsell.sql` — `path_a_matches`, `clinical_bookings`, `upsell_bookings`; `hold_slot_for_match`, `confirm_clinical_booking`, `book_upsell_partner`, `release_expired_slot_holds` |
-| Match engine | `apps/mobile/lib/services/match_engine.dart` — survey (+ optional H/L labs) → specialty + why-copy; no LLM |
+| Match engine | `apps/mobile/lib/services/match_engine.dart` — symptom chips (+ optional H/L labs) → specialty + why-copy; no LLM |
 | Match service | `apps/mobile/lib/services/match_service.dart` |
 | Match UI | `apps/mobile/lib/screens/match_screen.dart` — clinical primary, upsell secondary, countdown, sticky disclaimer |
 | Gate | `apps/mobile/lib/screens/match_gate_screen.dart` — **Start match** when ready |
@@ -30,7 +30,7 @@ If slots were exhausted in earlier demos, re-run Phase 1 seed: `supabase/seed/ph
 ## 2. Smoke steps (Android)
 
 1. Sign into Flutter with Google (same dart-defines as Phase 0.5).
-2. Path A: upload/confirm labs → spend (≥1 bucket) → survey (8 answers) → **Start match**.
+2. Path A: upload/confirm labs → spend (≥1 bucket) → symptoms (≥1 chip) → **Start match**.
 3. Match screen shows:
    - Clinical specialty + clinic + **Why this match** canned copy
    - Recommended slot with **Hold expires in MM:SS** (~15:00)
@@ -46,11 +46,11 @@ If slots were exhausted in earlier demos, re-run Phase 1 seed: `supabase/seed/ph
 
 ## Match rules (summary)
 
-- `primary_goal` is the strongest signal (maps 1:1 to the four specialties).
-- Sleep / mood / cycle / bone-heart / hot-flush answers add weighted bumps.
+- Selected symptom chips carry specialty weights (e.g. sleep/mood chips → sleep_mood; cycle/bleeding → gynae; bone/heart chip → bone_heart_risk; hot flushes / night sweats → menopause-aware GP).
 - Optional flagged labs (H/L only when present): name hints for lipids/bone/glucose → bone/heart; FSH/LH/estradiol/TSH → gynae/endocrine.
 - Tie-break: highest score, then specialty enum order.
-- Why-copy is canned from specialty lead-in + top survey/lab reasons + “not a diagnosis”.
+- Why-copy is canned from specialty lead-in + top symptom/lab reasons + “not a diagnosis”.
+- A derived `primary_goal` answer is stored for Path C from the winning specialty.
 
 ## Hold edge cases (hardened in Phase 6)
 

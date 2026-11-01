@@ -7,7 +7,7 @@ import 'models/path_a_session.dart';
 import 'screens/lab_upload_screen.dart';
 import 'screens/match_gate_screen.dart';
 import 'screens/spend_screen.dart';
-import 'screens/survey_screen.dart';
+import 'screens/symptoms_screen.dart';
 import 'services/auth_service.dart';
 import 'services/intake_service.dart';
 
@@ -274,7 +274,7 @@ class _SignedInShellState extends State<SignedInShell> {
             if (displayName != null) Text('Name: $displayName'),
             const SizedBox(height: 16),
             Text(
-              'Path A — labs → spend → survey → match. '
+              'Path A — labs → spend → symptoms → match. '
               '${FemmDisclaimers.oneLiner}',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
@@ -305,9 +305,9 @@ class _SignedInShellState extends State<SignedInShell> {
               else if (!session.hasSurvey)
                 OutlinedButton(
                   onPressed: () => _openPath(
-                    SurveyScreen(session: session, intakeService: _intake),
+                    SymptomsScreen(session: session, intakeService: _intake),
                   ),
-                  child: const Text('Complete survey'),
+                  child: const Text('Select symptoms'),
                 )
               else
                 OutlinedButton(
@@ -319,8 +319,8 @@ class _SignedInShellState extends State<SignedInShell> {
               const SizedBox(height: 8),
               Text(
                 session.readyForMatch
-                    ? 'Spend + survey done — open match for clinical hold + upsell.'
-                    : 'Match stays locked until spend and survey are saved.',
+                    ? 'Spend + symptoms done — open match for clinical hold + upsell.'
+                    : 'Match stays locked until spend and symptoms are saved.',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ],

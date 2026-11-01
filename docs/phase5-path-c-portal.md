@@ -12,7 +12,7 @@ After a clinical (or upsell) booking, a **summary pack** is snapshotted. The thi
 | Portal UI | `apps/portal` — Google Auth → claim demo clinic → upcoming appointments → summary → expand labs → PDF download |
 | Seed safety | `supabase/seed/phase1_demo_supply.sql` clears bookings/packs before wiping clinics |
 
-Pack fields (clinical): goals, spend, match reason, flagged labs only (scannable), full labs snapshot (expand), path tag `Path A`, disclaimer, original PDF path. Upsell packs are lighter (no full labs table).
+Pack fields (clinical): goals/symptoms (`primary_goal` + `symptoms[]`), spend, match reason, flagged labs only (scannable), full labs snapshot (expand), path tag `Path A`, disclaimer, original PDF path. Upsell packs are lighter (no full labs table).
 
 ## 1. Apply the Phase 5 migration
 
@@ -29,7 +29,7 @@ Confirm:
 ### A. User Path A → clinical book (Flutter)
 
 1. Sign into Flutter with a **user** Google account (dart-defines as Phase 0.5).
-2. Upload/confirm synthetic PDF → spend → survey → **Start match**.
+2. Upload/confirm synthetic PDF → spend → symptoms → **Start match**.
 3. **Confirm clinical booking**.
 4. Table Editor: `clinical_bookings` row + matching `summary_packs` row (`kind = clinical`, `path_tag = Path A`, disclaimer set, `flagged_labs` / `labs` populated).
 
@@ -43,7 +43,7 @@ Note which **clinic** was booked (specialty / clinic name).
 2. Sign in with a **different** Google account (practitioner). Prefer a separate test user so mobile `role: user` is not overwritten. If Auth works but the portal shows a setup/migration error, apply the Phase 5 SQL above (`profiles.clinic_id`) and retry — do not expect `[object Object]` red text (errors are formatted from Auth/PostgREST `.message`).
 3. **Claim a demo clinic** — pick the same fictional clinic that received the booking.
 4. **Upcoming appointments** lists that booking (slot time + patient snapshot).
-5. **Open summary** → see goals, spend, why-match, flagged labs, path tag, disclaimer.
+5. **Open summary** → see goals/symptoms, spend, why-match, flagged labs, path tag, disclaimer.
 6. **Expand** full labs table.
 7. **Download original PDF** (Storage RLS allows booked practitioner only).
 

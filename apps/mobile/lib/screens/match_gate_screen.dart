@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 
 import '../constants/disclaimers.dart';
 import '../models/path_a_session.dart';
-import '../models/survey_question.dart';
 import '../services/intake_service.dart';
+import '../widgets/path_a_step_header.dart';
 import 'match_screen.dart';
 import 'spend_screen.dart';
-import 'survey_screen.dart';
+import 'symptoms_screen.dart';
 
-/// Phase 3.3 — Match entry is gated until spend + survey are complete.
-/// Phase 4 — ready state opens rule-based match + 15-min hold + upsell.
+/// Match entry is gated until spend + symptoms are complete.
+/// Ready state opens rule-based match + 15-min hold + upsell.
 class MatchGateScreen extends StatefulWidget {
   const MatchGateScreen({
     super.key,
@@ -75,7 +75,7 @@ class _MatchGateScreenState extends State<MatchGateScreen> {
     );
   }
 
-  Future<void> _openSurvey() async {
+  Future<void> _openSymptoms() async {
     final session = _session ?? widget.session;
     if (!session.hasSpend) {
       await _openSpend();
@@ -83,7 +83,7 @@ class _MatchGateScreenState extends State<MatchGateScreen> {
     }
     await Navigator.of(context).pushReplacement(
       MaterialPageRoute<void>(
-        builder: (_) => SurveyScreen(
+        builder: (_) => SymptomsScreen(
           session: session,
           intakeService: _intake,
         ),
@@ -98,111 +98,124 @@ class _MatchGateScreenState extends State<MatchGateScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Match')),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: _loading
-              ? const Center(child: CircularProgressIndicator())
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Material(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .surfaceContainerHighest,
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Text(
-                          FemmDisclaimers.oneLiner,
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    if (_error != null) ...[
-                      Text(
-                        _error!,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.error,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                    if (!ready) ...[
-                      Text(
-                        'Match is locked',
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Labs must be confirmed, then finish spend categories '
-                        'and the short survey before matching can start.',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                      const SizedBox(height: 16),
-                      _GateRow(
-                        label: 'Labs confirmed',
-                        done: _labsConfirmed,
-                        onFix: null,
-                      ),
-                      const SizedBox(height: 8),
-                      _GateRow(
-                        label: 'Spend categories',
-                        done: session.hasSpend,
-                        onFix: _labsConfirmed ? _busyGuard(_openSpend) : null,
-                      ),
-                      const SizedBox(height: 8),
-                      _GateRow(
-                        label: 'Survey (8 questions)',
-                        done: session.hasSurvey,
-                        onFix: (_labsConfirmed && session.hasSpend)
-                            ? _busyGuard(_openSurvey)
-                            : null,
-                      ),
-                    ] else ...[
-                      Text(
-                        'Ready for match',
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Spend and survey are saved. Next: rule-based clinical '
-                        'recommendation with a 15-minute slot hold and '
-                        'same-bucket upsell — book either path independently.',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Spend: ${session.spendBuckets.map((b) => b.label).join(', ')}',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Survey answers: ${session.surveyAnswers.length}/${kSurveyQuestions.length}',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                      const SizedBox(height: 24),
-                      FilledButton(
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => MatchScreen(session: session),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const PathAStepHeader(step: 3, label: 'Match'),
+          Expanded(
+            child: SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: _loading
+                    ? const Center(child: CircularProgressIndicator())
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Material(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHighest,
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Text(
+                                FemmDisclaimers.oneLiner,
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
                             ),
-                          );
-                        },
-                        child: const Text('Start match'),
+                          ),
+                          const SizedBox(height: 24),
+                          if (_error != null) ...[
+                            Text(
+                              _error!,
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.error,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                          if (!ready) ...[
+                            Text(
+                              'Match is locked',
+                              style: Theme.of(context).textTheme.headlineSmall,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Labs must be confirmed, then finish spend '
+                              'categories and symptoms before matching can start.',
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                            const SizedBox(height: 16),
+                            _GateRow(
+                              label: 'Labs confirmed',
+                              done: _labsConfirmed,
+                              onFix: null,
+                            ),
+                            const SizedBox(height: 8),
+                            _GateRow(
+                              label: 'Spend categories',
+                              done: session.hasSpend,
+                              onFix:
+                                  _labsConfirmed ? _busyGuard(_openSpend) : null,
+                            ),
+                            const SizedBox(height: 8),
+                            _GateRow(
+                              label: 'Symptoms',
+                              done: session.hasSurvey,
+                              onFix: (_labsConfirmed && session.hasSpend)
+                                  ? _busyGuard(_openSymptoms)
+                                  : null,
+                            ),
+                          ] else ...[
+                            Text(
+                              'Ready for match',
+                              style: Theme.of(context).textTheme.headlineSmall,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Spend and symptoms are saved. Next: rule-based '
+                              'clinical recommendation with a 15-minute slot '
+                              'hold and same-bucket upsell — book either path '
+                              'independently.',
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Spend: ${session.spendBuckets.map((b) => b.label).join(', ')}',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Symptoms: ${session.selectedSymptomLabels.join(', ')}',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                            const SizedBox(height: 24),
+                            FilledButton(
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute<void>(
+                                    builder: (_) =>
+                                        MatchScreen(session: session),
+                                  ),
+                                );
+                              },
+                              child: const Text('Start match'),
+                            ),
+                          ],
+                          const Spacer(),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.of(context)
+                                  .popUntil((r) => r.isFirst);
+                            },
+                            child: const Text('Back to home'),
+                          ),
+                        ],
                       ),
-                    ],
-                    const Spacer(),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.of(context).popUntil((r) => r.isFirst);
-                      },
-                      child: const Text('Back to home'),
-                    ),
-                  ],
-                ),
-        ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

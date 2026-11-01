@@ -44,9 +44,9 @@ Use **two Google accounts**: Account A = Flutter user, Account B = practitioner 
 1. **Sign in** with Google (Account A).
 2. **Upload lab PDF** → pick `fixtures/labs/synthetic-hk-womens-panel.pdf` (or the asset copy under `apps/mobile/assets/labs/`).
 3. Wait for extract → **confirm labs** (edit optional; keep H/L flags as shown).
-4. **Spend** → select ≥1 bucket (demo tip: pick 2–3 so upsell cards appear).
-5. **Survey** → answer all 8 questions (primary goal drives specialty).
-6. **Open match gate** → **Start match**.
+4. **Spend** → **STEP 1 OF 3 · SPEND**; select ≥1 bucket (demo tip: pick 2–3 so upsell cards appear).
+5. **Symptoms** → **STEP 2 OF 3 · SYMPTOMS**; tap chips that fit (selected chips drive specialty weights).
+6. **Open match gate** → **STEP 3 OF 3 · MATCH** → **Start match**.
 7. Match screen shows:
    - Clinical specialty + clinic + **Why this match**
    - **Hold expires in MM:SS** (~15:00)
@@ -60,7 +60,7 @@ Use **two Google accounts**: Account A = Flutter user, Account B = practitioner 
 1. Portal → **Sign in with Google** (Account B).
 2. **Claim** the same fictional clinic named on the match screen.
 3. **Upcoming appointments** → open the booking.
-4. Scan summary: goals, spend, match reason, flagged labs, path tag **Path A**, disclaimer.
+4. Scan summary: goals/symptoms, spend, match reason, flagged labs, path tag **Path A**, disclaimer.
 5. **Expand** full labs → **Download original PDF**.
 
 **Done** when pack + PDF open without error and Account B on a *different* clinic cannot see the booking.

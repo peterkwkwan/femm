@@ -1,6 +1,7 @@
 import 'spend_bucket.dart';
+import 'symptom_chip.dart';
 
-/// Path A intake session after labs confirm (Phase 3).
+/// Path A intake session after labs confirm (Phase 3+).
 class PathASession {
   PathASession({
     required this.id,
@@ -16,15 +17,25 @@ class PathASession {
   final DateTime? spendCompletedAt;
   final DateTime? surveyCompletedAt;
   final List<SpendBucket> spendBuckets;
+
+  /// Persisted `path_a_survey_answers` map (symptom chips + optional primary_goal).
   final Map<String, String> surveyAnswers;
 
   bool get hasSpend => spendCompletedAt != null && spendBuckets.isNotEmpty;
 
+  /// Symptoms step complete when stamped and ≥1 chip is stored.
   bool get hasSurvey =>
-      surveyCompletedAt != null && surveyAnswers.isNotEmpty;
+      surveyCompletedAt != null &&
+      selectedSymptomKeysFromAnswers(surveyAnswers).isNotEmpty;
 
-  /// Match (Phase 4) may start only when spend + survey are done.
+  /// Match (Phase 4) may start only when spend + symptoms are done.
   bool get readyForMatch => hasSpend && hasSurvey;
+
+  Set<String> get selectedSymptomKeys =>
+      selectedSymptomKeysFromAnswers(surveyAnswers);
+
+  List<String> get selectedSymptomLabels =>
+      selectedSymptomLabelsFromAnswers(surveyAnswers);
 
   factory PathASession.fromJson(
     Map<String, dynamic> json, {

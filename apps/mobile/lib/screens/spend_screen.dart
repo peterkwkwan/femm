@@ -3,9 +3,10 @@ import 'package:flutter/material.dart';
 import '../models/path_a_session.dart';
 import '../models/spend_bucket.dart';
 import '../services/intake_service.dart';
-import 'survey_screen.dart';
+import '../widgets/path_a_step_header.dart';
+import 'symptoms_screen.dart';
 
-/// Phase 3.1 — multi-select the six locked spend buckets (≥1 required).
+/// Path A — multi-select the six locked spend buckets (≥1 required).
 class SpendScreen extends StatefulWidget {
   const SpendScreen({
     super.key,
@@ -47,7 +48,7 @@ class _SpendScreenState extends State<SpendScreen> {
       if (!mounted) return;
       await Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(
-          builder: (_) => SurveyScreen(
+          builder: (_) => SymptomsScreen(
             session: session,
             intakeService: _intake,
           ),
@@ -72,15 +73,13 @@ class _SpendScreenState extends State<SpendScreen> {
       appBar: AppBar(title: const Text('Spend categories')),
       body: Column(
         children: [
-          Material(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Text(
-                'Select categories you already spend on. Upsell later stays '
-                'inside these buckets only. Care-navigation — not a diagnosis.',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
+          const PathAStepHeader(step: 1, label: 'Spend'),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: Text(
+              'Select categories you already spend on. Upsell later stays '
+              'inside these buckets only. Care-navigation — not a diagnosis.',
+              style: Theme.of(context).textTheme.bodySmall,
             ),
           ),
           if (_error != null)

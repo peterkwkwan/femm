@@ -17,6 +17,7 @@ After you create a Free project (see click-path setup linked from the root READM
 | `20261101160000_phase3_spend_and_survey.sql` | `path_a_sessions`, spend selections, survey answers + RLS |
 | `20261101180000_phase4_match_hold_upsell.sql` | Match/hold/bookings + hold/confirm/upsell RPCs |
 | `20261101200000_phase5_path_c_summary_packs.sql` | Path C `summary_packs`, practitioner `clinic_id`, pack gen + booking RLS |
+| `20261102100000_path_a_symptoms_chips.sql` | Symptoms-chip storage comments + Path C `goals.symptoms[]` snapshot |
 
 ## Edge Functions (Phase 2)
 
