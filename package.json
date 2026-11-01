@@ -8,7 +8,8 @@
     "portal:build": "npm --prefix apps/portal run build",
     "portal:preview": "npm --prefix apps/portal run preview",
     "seed:phase1": "./scripts/seed-phase1.sh",
-    "pdf:synthetic-lab": "python3 scripts/generate_synthetic_lab_pdf.py"
+    "pdf:synthetic-lab": "python3 scripts/generate_synthetic_lab_pdf.py",
+    "test:extract-fixture": "deno run --allow-read scripts/test-extract-fixture.ts"
   },
   "repository": {
     "type": "git",

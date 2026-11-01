@@ -1,0 +1,310 @@
+import 'package:flutter/material.dart';
+
+import '../models/lab_biomarker.dart';
+import '../services/lab_service.dart';
+
+/// Editable biomarker list after extract. Flags shown only when present.
+class LabConfirmScreen extends StatefulWidget {
+  const LabConfirmScreen({
+    super.key,
+    required this.document,
+    required this.initialRows,
+    this.labService,
+  });
+
+  final LabDocument document;
+  final List<LabBiomarker> initialRows;
+  final LabService? labService;
+
+  @override
+  State<LabConfirmScreen> createState() => _LabConfirmScreenState();
+}
+
+class _LabConfirmScreenState extends State<LabConfirmScreen> {
+  late final LabService _labs = widget.labService ?? LabService();
+  late List<LabBiomarker> _rows;
+  bool _busy = false;
+  String? _error;
+  bool _confirmed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _rows = widget.initialRows
+        .where((r) => !r.isDeleted)
+        .map(
+          (r) => LabBiomarker(
+            id: r.id,
+            sortOrder: r.sortOrder,
+            name: r.name,
+            value: r.value,
+            unit: r.unit,
+            refRange: r.refRange,
+            flag: r.flag,
+          ),
+        )
+        .toList();
+  }
+
+  Future<void> _confirm() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await _labs.confirmLabs(documentId: widget.document.id, rows: _rows);
+      if (!mounted) return;
+      setState(() {
+        _confirmed = true;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Labs confirmed and saved')),
+      );
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+        });
+      }
+    }
+  }
+
+  void _markDeleted(int index) {
+    setState(() {
+      _rows[index].isDeleted = true;
+    });
+  }
+
+  List<LabBiomarker> get _visible =>
+      _rows.where((r) => !r.isDeleted).toList(growable: false);
+
+  @override
+  Widget build(BuildContext context) {
+    final visible = _visible;
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Confirm labs'),
+      ),
+      body: Column(
+        children: [
+          Material(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Text(
+                'Care-navigation only — not a diagnosis. Edit or remove '
+                'ambiguous rows, then confirm. H/L shown only when present '
+                'on the report (never invented).',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
+          ),
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Text(
+                _error!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ),
+          if (_confirmed)
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Text(
+                'Confirmed. Spend + survey come in Phase 3.',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ),
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
+              itemCount: visible.length,
+              itemBuilder: (context, index) {
+                final row = visible[index];
+                final masterIndex = _rows.indexOf(row);
+                return _BiomarkerEditor(
+                  key: ValueKey(row.id ?? '${row.name}-$masterIndex'),
+                  row: row,
+                  onDelete: _confirmed || _busy
+                      ? null
+                      : () => _markDeleted(masterIndex),
+                  readOnly: _confirmed || _busy,
+                );
+              },
+            ),
+          ),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: FilledButton(
+                onPressed: (_busy || _confirmed || visible.isEmpty)
+                    ? null
+                    : _confirm,
+                child: _busy
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(
+                        _confirmed
+                            ? 'Labs confirmed'
+                            : 'Confirm labs (${visible.length})',
+                      ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BiomarkerEditor extends StatefulWidget {
+  const _BiomarkerEditor({
+    super.key,
+    required this.row,
+    required this.onDelete,
+    required this.readOnly,
+  });
+
+  final LabBiomarker row;
+  final VoidCallback? onDelete;
+  final bool readOnly;
+
+  @override
+  State<_BiomarkerEditor> createState() => _BiomarkerEditorState();
+}
+
+class _BiomarkerEditorState extends State<_BiomarkerEditor> {
+  LabBiomarker get row => widget.row;
+
+  @override
+  Widget build(BuildContext context) {
+    final readOnly = widget.readOnly;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  initialValue: row.name,
+                  readOnly: readOnly,
+                  decoration: const InputDecoration(
+                    labelText: 'Test',
+                    isDense: true,
+                  ),
+                  onChanged: (v) => row.name = v,
+                ),
+              ),
+              if (widget.onDelete != null)
+                IconButton(
+                  tooltip: 'Remove row',
+                  onPressed: widget.onDelete,
+                  icon: const Icon(Icons.delete_outline),
+                ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  initialValue: row.value?.toString() ?? '',
+                  readOnly: readOnly,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                    signed: true,
+                  ),
+                  decoration: const InputDecoration(
+                    labelText: 'Result',
+                    isDense: true,
+                  ),
+                  onChanged: (v) {
+                    final t = v.trim();
+                    if (t.isEmpty) {
+                      row.value = null;
+                      return;
+                    }
+                    row.value = double.tryParse(t);
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextFormField(
+                  initialValue: row.unit ?? '',
+                  readOnly: readOnly,
+                  decoration: const InputDecoration(
+                    labelText: 'Unit',
+                    isDense: true,
+                  ),
+                  onChanged: (v) =>
+                      row.unit = v.trim().isEmpty ? null : v.trim(),
+                ),
+              ),
+              const SizedBox(width: 8),
+              SizedBox(
+                width: 72,
+                child: InputDecorator(
+                  decoration: const InputDecoration(
+                    labelText: 'Flag',
+                    isDense: true,
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String?>(
+                      isExpanded: true,
+                      value: row.flag,
+                      items: const [
+                        DropdownMenuItem<String?>(
+                          value: null,
+                          child: Text('—'),
+                        ),
+                        DropdownMenuItem<String?>(
+                          value: 'H',
+                          child: Text('H'),
+                        ),
+                        DropdownMenuItem<String?>(
+                          value: 'L',
+                          child: Text('L'),
+                        ),
+                      ],
+                      onChanged: readOnly
+                          ? null
+                          : (v) {
+                              setState(() {
+                                row.flag = v;
+                              });
+                            },
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          TextFormField(
+            initialValue: row.refRange ?? '',
+            readOnly: readOnly,
+            decoration: const InputDecoration(
+              labelText: 'Reference range',
+              isDense: true,
+              helperText:
+                  'Flag is H/L only when present — empty means no flag, not “normal”.',
+            ),
+            onChanged: (v) =>
+                row.refRange = v.trim().isEmpty ? null : v.trim(),
+          ),
+          const Divider(height: 20),
+        ],
+      ),
+    );
+  }
+}

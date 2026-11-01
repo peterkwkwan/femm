@@ -1,0 +1,5 @@
+# Minimal Supabase CLI config for Edge Functions deploy.
+# Project is linked via `supabase link` (not committed).
+
+[functions.extract-lab-pdf]
+verify_jwt = true

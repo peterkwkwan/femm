@@ -13,6 +13,16 @@ After you create a Free project (see click-path setup linked from the root READM
 | --- | --- |
 | `20261031140000_profiles_and_lab_pdfs.sql` | `profiles` + private `lab-pdfs` + RLS |
 | `20261101120000_phase1_clinical_and_upsell_supply.sql` | `clinics`, `appointment_slots`, `upsell_partners` + enums + select RLS |
+| `20261101140000_phase2_lab_documents.sql` | `lab_documents`, `lab_biomarker_rows` + RLS |
+
+## Edge Functions (Phase 2)
+
+| Function | Role |
+| --- | --- |
+| `extract-lab-pdf` | Callable: `{ document_id }` → extract biomarker table from Storage PDF |
+
+Deploy + smoke: [`docs/phase2-lab-extract.md`](../docs/phase2-lab-extract.md).  
+Offline fixture: `npm run test:extract-fixture`.
 
 ## Reset Phase 1 demo supply
 

@@ -3,7 +3,7 @@
 Hong Kong menopause **care-navigation** prototype (not a diagnosis).  
 Stack lock: **Flutter Android** user client · **thin web** practitioner portal · **Supabase** (Auth + Postgres + Storage) · **Google Auth** for users and practitioners.
 
-Phase 0.5 cut Firebase over to Supabase free tier. **Phase 1** adds the synthetic lab PDF, golden extract fixture, and fictional clinic/upsell seed (no Path A UI yet).
+Phase 0.5 cut Firebase over to Supabase free tier. **Phase 1** seeded supply + synthetic PDF. **Phase 2** adds PDF upload → Edge Function extract → Flutter confirm.
 
 ## Repo layout
 
@@ -11,7 +11,8 @@ Phase 0.5 cut Firebase over to Supabase free tier. **Phase 1** adds the syntheti
 | --- | --- |
 | `apps/mobile` | Flutter Android user app (`supabase_flutter`) |
 | `apps/portal` | Vite + TypeScript practitioner portal (`@supabase/supabase-js`) |
-| `supabase/migrations` | Postgres schema + RLS (`profiles`, clinics/slots/upsell, `lab-pdfs`) |
+| `supabase/migrations` | Postgres schema + RLS (`profiles`, clinics/slots/upsell, lab docs, `lab-pdfs`) |
+| `supabase/functions` | Edge Functions (`extract-lab-pdf`) |
 | `supabase/seed` | Idempotent Phase 1 demo supply reset SQL |
 | `fixtures/labs` | Synthetic HK women’s panel PDF + golden extract JSON |
 
@@ -37,8 +38,9 @@ Full click-path (Google OAuth, redirects, SHA-1, SQL, bucket): **[`docs/supabase
 5. Google Cloud → **Android** OAuth client: package `com.femm.femm_app` + debug SHA-1.
 6. Run SQL in `supabase/migrations/20261031140000_profiles_and_lab_pdfs.sql` (profiles RLS + private `lab-pdfs` bucket).
 7. **Phase 1 schema + seed** (after 0.5 SQL): run `20261101120000_phase1_clinical_and_upsell_supply.sql`, then reset demo supply — see **[`docs/phase1-demo-seed.md`](./docs/phase1-demo-seed.md)**.
-8. Portal: copy `apps/portal/.env.example` → `apps/portal/.env.local` and fill `VITE_SUPABASE_*`.
-9. Mobile: pass dart-defines (or copy `apps/mobile/dart_defines.example.json` → `dart_defines.json`, gitignored):
+8. **Phase 2:** run `20261101140000_phase2_lab_documents.sql`, then deploy `extract-lab-pdf` — see **[`docs/phase2-lab-extract.md`](./docs/phase2-lab-extract.md)**.
+9. Portal: copy `apps/portal/.env.example` → `apps/portal/.env.local` and fill `VITE_SUPABASE_*`.
+10. Mobile: pass dart-defines (or copy `apps/mobile/dart_defines.example.json` → `dart_defines.json`, gitignored):
 
    ```bash
    cd apps/mobile
@@ -105,9 +107,25 @@ Google button uses Supabase `signInWithOAuth({ provider: 'google' })`.
 - [x] 1.4 Fictional upsell partners: one per six spend buckets
 - [x] 1.5 Seed reset script + docs (`npm run seed:phase1` / SQL Editor)
 
+## Phase 2 — PDF upload / extract / confirm
+
+Signed-in users upload a lab PDF to private `lab-pdfs`, call Edge Function `extract-lab-pdf`, edit/confirm biomarker rows.
+
+- Offline golden test: `npm run test:extract-fixture` (needs [Deno](https://deno.land))
+- Peter deploy + smoke steps: **[`docs/phase2-lab-extract.md`](./docs/phase2-lab-extract.md)**
+
+Acceptance:
+
+- [x] 2.1 Auth’d Storage upload + `lab_documents` row
+- [x] 2.2 Edge Function extract → biomarker rows
+- [x] 2.3 Flutter confirm/edit UI + persist
+- [x] 2.4 H/L only when present (no invented meaning)
+- [x] 2.5 Fixture test vs golden JSON
+- [ ] Peter: apply Phase 2 SQL + `supabase functions deploy extract-lab-pdf` (outside git)
+
 ## Explicitly not in this build (yet)
 
-Path B, wearables, iOS day-one, real partner inventory, imaging OCR/AI, diagnosis/HRT claims, bilingual UI, PDF Edge Function (Phase 2), match/hold UI (Phase 4).
+Path B, wearables, iOS day-one, real partner inventory, imaging OCR/AI, diagnosis/HRT claims, bilingual UI, spend/survey (Phase 3), match/hold UI (Phase 4).
 
 Firebase / Blaze is abandoned for this prototype — do not re-enable Storage on Blaze.
 

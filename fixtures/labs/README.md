@@ -12,4 +12,10 @@ pip install reportlab
 npm run pdf:synthetic-lab
 ```
 
+Offline Phase 2 extract test (Deno):
+
+```bash
+npm run test:extract-fixture
+```
+
 Not a real patient report. Flags only as printed on the PDF.

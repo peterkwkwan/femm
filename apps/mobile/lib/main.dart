@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'config/supabase_config.dart';
+import 'screens/lab_upload_screen.dart';
 import 'services/auth_service.dart';
 
 Future<void> main() async {
@@ -221,8 +222,21 @@ class SignedInShell extends StatelessWidget {
             if (user.email != null) Text('Email: ${user.email}'),
             if (displayName != null) Text('Name: $displayName'),
             const SizedBox(height: 16),
-            const Text(
-              'Phase 0.5 shell — Path A flow lands in later phases (Supabase).',
+            Text(
+              'Path A — upload a lab PDF, extract biomarkers, confirm rows. '
+              'Not a diagnosis.',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 16),
+            FilledButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const LabUploadScreen(),
+                  ),
+                );
+              },
+              child: const Text('Upload lab PDF'),
             ),
             if (error != null) ...[
               const SizedBox(height: 12),
