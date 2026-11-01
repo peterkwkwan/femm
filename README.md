@@ -3,7 +3,7 @@
 Hong Kong menopause **care-navigation** prototype (not a diagnosis).  
 Stack lock: **Flutter Android** user client · **thin web** practitioner portal · **Supabase** (Auth + Postgres + Storage) · **Google Auth** for users and practitioners.
 
-Phase 0.5 cuts the Phase 0 Firebase bootstrap over to Supabase free tier. Later phases add Path A → Path C.
+Phase 0.5 cut Firebase over to Supabase free tier. **Phase 1** adds the synthetic lab PDF, golden extract fixture, and fictional clinic/upsell seed (no Path A UI yet).
 
 ## Repo layout
 
@@ -11,7 +11,9 @@ Phase 0.5 cuts the Phase 0 Firebase bootstrap over to Supabase free tier. Later 
 | --- | --- |
 | `apps/mobile` | Flutter Android user app (`supabase_flutter`) |
 | `apps/portal` | Vite + TypeScript practitioner portal (`@supabase/supabase-js`) |
-| `supabase/migrations` | Postgres `profiles` + private `lab-pdfs` Storage + RLS |
+| `supabase/migrations` | Postgres schema + RLS (`profiles`, clinics/slots/upsell, `lab-pdfs`) |
+| `supabase/seed` | Idempotent Phase 1 demo supply reset SQL |
+| `fixtures/labs` | Synthetic HK women’s panel PDF + golden extract JSON |
 
 ## Prerequisites
 
@@ -34,8 +36,9 @@ Full click-path (Google OAuth, redirects, SHA-1, SQL, bucket): **[`docs/supabase
    **URL Configuration:** Site URL `http://localhost:5173`; allow that redirect.
 5. Google Cloud → **Android** OAuth client: package `com.femm.femm_app` + debug SHA-1.
 6. Run SQL in `supabase/migrations/20261031140000_profiles_and_lab_pdfs.sql` (profiles RLS + private `lab-pdfs` bucket).
-7. Portal: copy `apps/portal/.env.example` → `apps/portal/.env.local` and fill `VITE_SUPABASE_*`.
-8. Mobile: pass dart-defines (or copy `apps/mobile/dart_defines.example.json` → `dart_defines.json`, gitignored):
+7. **Phase 1 schema + seed** (after 0.5 SQL): run `20261101120000_phase1_clinical_and_upsell_supply.sql`, then reset demo supply — see **[`docs/phase1-demo-seed.md`](./docs/phase1-demo-seed.md)**.
+8. Portal: copy `apps/portal/.env.example` → `apps/portal/.env.local` and fill `VITE_SUPABASE_*`.
+9. Mobile: pass dart-defines (or copy `apps/mobile/dart_defines.example.json` → `dart_defines.json`, gitignored):
 
    ```bash
    cd apps/mobile
@@ -46,6 +49,20 @@ Full click-path (Google OAuth, redirects, SHA-1, SQL, bucket): **[`docs/supabase
    ```
 
 **Do not commit** `.env.local`, `dart_defines.json`, or the service_role key.
+
+## Phase 1 — load / reset demo seed
+
+Full steps: **[`docs/phase1-demo-seed.md`](./docs/phase1-demo-seed.md)**. Short path:
+
+1. Apply `supabase/migrations/20261101120000_phase1_clinical_and_upsell_supply.sql` once (SQL Editor).
+2. Reset supply anytime by pasting `supabase/seed/phase1_demo_supply.sql` into the SQL Editor **or**:
+
+   ```bash
+   export DATABASE_URL='postgresql://postgres.:YOUR_DB_PASSWORD@db.YOUR_PROJECT_REF.supabase.co:5432/postgres'
+   npm run seed:phase1
+   ```
+
+Expect **4 clinics**, **12 slots**, **6 upsell partners**. Synthetic upload PDF: `fixtures/labs/synthetic-hk-womens-panel.pdf` (golden extract beside it).
 
 ## Run — Flutter Android (`apps/mobile`)
 
@@ -80,9 +97,17 @@ Google button uses Supabase `signInWithOAuth({ provider: 'google' })`.
 - [x] 0.5.7 README / env examples; Firebase emulators no longer the primary path
 - [ ] 0.5.1–0.5.2 Peter: create Free project + enable Google OAuth (outside git)
 
+## Phase 1 acceptance
+
+- [x] 1.1 Synthetic HK women’s panel PDF (`fixtures/labs/synthetic-hk-womens-panel.pdf`)
+- [x] 1.2 Golden extract JSON fixture (same folder)
+- [x] 1.3 Fictional clinical supply: 4 specialties + bookable slots (schema + seed)
+- [x] 1.4 Fictional upsell partners: one per six spend buckets
+- [x] 1.5 Seed reset script + docs (`npm run seed:phase1` / SQL Editor)
+
 ## Explicitly not in this build (yet)
 
-Path B, wearables, iOS day-one, real partner inventory, imaging OCR/AI, diagnosis/HRT claims, bilingual UI, PDF Edge Function (Phase 2), clinic seed (Phase 1).
+Path B, wearables, iOS day-one, real partner inventory, imaging OCR/AI, diagnosis/HRT claims, bilingual UI, PDF Edge Function (Phase 2), match/hold UI (Phase 4).
 
 Firebase / Blaze is abandoned for this prototype — do not re-enable Storage on Blaze.
 
