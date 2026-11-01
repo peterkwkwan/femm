@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../constants/disclaimers.dart';
 import '../models/clinic.dart';
 import '../models/match_result.dart';
 import '../models/path_a_session.dart';
@@ -9,6 +10,7 @@ import '../models/spend_bucket.dart';
 import '../services/match_service.dart';
 
 /// Phase 4 — clinical recommendation (15-min hold) + same-bucket upsell.
+/// Phase 6 — hold expire/release, double-confirm, leave-and-return hardening.
 /// Clinical and upsell book independently. Sticky not-a-diagnosis disclaimer.
 class MatchScreen extends StatefulWidget {
   const MatchScreen({
@@ -24,7 +26,8 @@ class MatchScreen extends StatefulWidget {
   State<MatchScreen> createState() => _MatchScreenState();
 }
 
-class _MatchScreenState extends State<MatchScreen> {
+class _MatchScreenState extends State<MatchScreen>
+    with WidgetsBindingObserver {
   late final MatchService _match = widget.matchService ?? MatchService();
 
   PathAMatch? _matchRow;
@@ -35,25 +38,59 @@ class _MatchScreenState extends State<MatchScreen> {
 
   bool _loading = true;
   bool _busyClinical = false;
+  bool _releasingHold = false;
+  /// Local flag so UI still offers re-hold after RPC cleared slot_id / expires_at.
+  bool _holdExpiredLocal = false;
   String? _busyPartnerId;
   String? _error;
   Duration _remaining = Duration.zero;
   Timer? _ticker;
 
-  static const String _disclaimer =
-      'Care-navigation only — not a diagnosis. femm does not prescribe, '
-      'interpret imaging, or replace clinical advice.';
-
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _bootstrap();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _ticker?.cancel();
     super.dispose();
+  }
+
+  /// Leave-and-return: refresh hold / booking state when app resumes.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && !_loading && !_busyClinical) {
+      unawaited(_resumeFromBackground());
+    }
+  }
+
+  Future<void> _resumeFromBackground() async {
+    try {
+      final resumed = await _match.resumeMatchState(widget.session);
+      final upsellBookings =
+          await _match.fetchUpsellBookings(widget.session.id);
+      if (!mounted) return;
+      setState(() {
+        if (resumed.match != null) {
+          _matchRow = resumed.match;
+        }
+        _clinical = resumed.clinical;
+        _holdExpiredLocal =
+            resumed.clinical == null && resumed.holdExpired;
+        _bookedPartnerIds
+          ..clear()
+          ..addAll(upsellBookings.map((b) => b.partnerId));
+        _error = null;
+      });
+      _syncCountdown();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = e.toString());
+    }
   }
 
   Future<void> _bootstrap() async {
@@ -74,7 +111,12 @@ class _MatchScreenState extends State<MatchScreen> {
         _bookedPartnerIds
           ..clear()
           ..addAll(upsellBookings.map((b) => b.partnerId));
+        _holdExpiredLocal = started.clinical == null &&
+            !started.match.hasActiveHold &&
+            (started.match.holdExpiresAt != null ||
+                started.match.slotId != null);
         _loading = false;
+        _error = null;
       });
       _syncCountdown();
     } catch (e) {
@@ -90,7 +132,7 @@ class _MatchScreenState extends State<MatchScreen> {
     _ticker?.cancel();
     final match = _matchRow;
     final until = match?.holdExpiresAt;
-    if (_clinical != null || until == null) {
+    if (_clinical != null || until == null || _holdExpiredLocal) {
       setState(() => _remaining = Duration.zero);
       return;
     }
@@ -102,11 +144,34 @@ class _MatchScreenState extends State<MatchScreen> {
       });
       if (left.isNegative || left == Duration.zero) {
         _ticker?.cancel();
+        unawaited(_onHoldCountdownExpired());
       }
     }
 
     tick();
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) => tick());
+  }
+
+  /// Expire/release: free inventory promptly when countdown hits zero on-screen.
+  Future<void> _onHoldCountdownExpired() async {
+    if (_clinical != null || _releasingHold || _holdExpiredLocal) return;
+    setState(() {
+      _holdExpiredLocal = true;
+      _remaining = Duration.zero;
+    });
+    _releasingHold = true;
+    try {
+      await _match.releaseExpiredHolds();
+      final refreshed = await _match.fetchMatch(widget.session.id);
+      if (!mounted) return;
+      if (refreshed != null) {
+        setState(() => _matchRow = refreshed);
+      }
+    } catch (_) {
+      // UI already shows expired; next re-hold / resume will release again.
+    } finally {
+      _releasingHold = false;
+    }
   }
 
   String _formatCountdown(Duration d) {
@@ -128,16 +193,27 @@ class _MatchScreenState extends State<MatchScreen> {
   }
 
   Future<void> _confirmClinical() async {
+    // Double-confirm: already booked → no-op success path.
+    if (_clinical != null || _busyClinical) return;
+    if (_holdExpiredLocal || _remaining == Duration.zero) {
+      setState(() {
+        _error = 'Hold expired — hold another slot before confirming.';
+        _holdExpiredLocal = true;
+      });
+      return;
+    }
     setState(() {
       _busyClinical = true;
       _error = null;
     });
     try {
+      // RPC is idempotent: second confirm returns the existing booking.
       final booking = await _match.confirmClinical(widget.session.id);
       if (!mounted) return;
       setState(() {
         _clinical = booking;
         _busyClinical = false;
+        _holdExpiredLocal = false;
       });
       _ticker?.cancel();
     } catch (e) {
@@ -154,14 +230,17 @@ class _MatchScreenState extends State<MatchScreen> {
     setState(() {
       _loading = true;
       _error = null;
+      _holdExpiredLocal = false;
     });
     try {
+      await _match.releaseExpiredHolds();
       // Clear stale client state; startOrResume will pick a new slot.
       final started = await _match.startOrResumeMatch(widget.session);
       if (!mounted) return;
       setState(() {
         _matchRow = started.match;
         _clinical = started.clinical;
+        _holdExpiredLocal = false;
         _loading = false;
       });
       _syncCountdown();
@@ -270,7 +349,7 @@ class _MatchScreenState extends State<MatchScreen> {
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
                 child: Text(
-                  _disclaimer,
+                  FemmDisclaimers.stickyMatch,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.w600,
@@ -289,12 +368,16 @@ class _MatchScreenState extends State<MatchScreen> {
     final clinic = match?.clinic;
     final holdAlive = _clinical == null &&
         match != null &&
-        match.holdExpiresAt != null &&
+        !_holdExpiredLocal &&
+        match.hasActiveHold &&
         _remaining > Duration.zero;
+    // Show re-hold even after release_expired cleared slot_id / expires_at.
     final holdExpired = _clinical == null &&
         match != null &&
         !holdAlive &&
-        match.slotId != null;
+        (_holdExpiredLocal ||
+            match.slotId != null ||
+            match.holdExpiresAt != null);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

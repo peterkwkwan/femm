@@ -3,7 +3,7 @@
 Hong Kong menopause **care-navigation** prototype (not a diagnosis).  
 Stack lock: **Flutter Android** user client · **thin web** practitioner portal · **Supabase** (Auth + Postgres + Storage) · **Google Auth** for users and practitioners.
 
-Phase 0.5 cut Firebase over to Supabase free tier. **Phase 1** seeded supply + synthetic PDF. **Phase 2** PDF upload → extract → confirm. **Phase 3** spend multi-select + ≤8-question survey + match gate. **Phase 4** rule-based match + 15-min hold + same-bucket upsell. **Phase 5** Path C summary packs + practitioner portal.
+Phase 0.5 cut Firebase over to Supabase free tier. **Phase 1** seeded supply + synthetic PDF. **Phase 2** PDF upload → extract → confirm. **Phase 3** spend multi-select + ≤8-question survey + match gate. **Phase 4** rule-based match + 15-min hold + same-bucket upsell. **Phase 5** Path C summary packs + practitioner portal. **Phase 6** demo script, hold edge-case hardening, disclaimer audit, Android smoke notes, deferral checklist.
 
 ## Repo layout
 
@@ -172,11 +172,36 @@ Acceptance:
 - [x] 5.6 Booking-scoped RLS + Storage select for booked practitioners
 - [ ] Peter: apply Phase 5 SQL (outside git)
 
-## Explicitly not in this build (yet)
+## Phase 6 — Demo hardening + handoff
 
-Path B, wearables, iOS day-one, real partner inventory, imaging OCR/AI, diagnosis/HRT claims, bilingual UI, demo hardening (Phase 6).
+Full Path A → Path C demo without engineer improvisation. Hold expire/release, double-confirm, and leave-and-return are defined in the client; disclaimers audited; deferred scope listed.
 
-Firebase / Blaze is abandoned for this prototype — do not re-enable Storage on Blaze.
+**Run the final demo:** [`docs/phase6-demo-handoff.md`](./docs/phase6-demo-handoff.md) (§6.1 script, <10 min).
+
+Acceptance:
+
+- [x] 6.1 End-to-end demo script (seed → user Path A → practitioner Path C)
+- [x] 6.2 Hold edge cases (expire/release, double-confirm, leave-and-return)
+- [x] 6.3 Disclaimer audit (sticky match + Path C; one-line on every pack)
+- [x] 6.4 Android smoke notes (Peter device/emulator)
+- [x] 6.5 Deferral checklist (below + phase6 doc)
+- [ ] Peter: run the §6.1 demo once on Android + portal (outside git)
+
+## Explicitly not in this build
+
+Do **not** demo or treat as shipped:
+
+| Deferred | Notes |
+| --- | --- |
+| Path B | Post–health-check / GP-nudge entry |
+| Wearables | Sync or snapshot |
+| iOS day-one | After Android demo works |
+| Real partners / inventory | Fictional seed only |
+| Imaging OCR / AI / diagnostic image storage | Never |
+| Cancer/CT advice, HRT dosing, diagnosis claims | Never in prototype |
+| Bilingual UI, EHR write-back, own skincare line | Out |
+| Inventing new spend categories | Upsell only within selected buckets |
+| Firebase / Blaze billing | Abandoned — do not re-enable Storage on Blaze |
 
 ## License
 

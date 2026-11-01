@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'config/supabase_config.dart';
+import 'constants/disclaimers.dart';
 import 'models/path_a_session.dart';
 import 'screens/lab_upload_screen.dart';
 import 'screens/match_gate_screen.dart';
@@ -274,7 +275,7 @@ class _SignedInShellState extends State<SignedInShell> {
             const SizedBox(height: 16),
             Text(
               'Path A — labs → spend → survey → match. '
-              'Care-navigation only — not a diagnosis.',
+              '${FemmDisclaimers.oneLiner}',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 16),

@@ -52,6 +52,10 @@ If slots were exhausted in earlier demos, re-run Phase 1 seed: `supabase/seed/ph
 - Tie-break: highest score, then specialty enum order.
 - Why-copy is canned from specialty lead-in + top survey/lab reasons + “not a diagnosis”.
 
+## Hold edge cases (hardened in Phase 6)
+
+Expire/release, double-confirm, and leave-and-return behaviors: [`phase6-demo-handoff.md`](./phase6-demo-handoff.md) §6.2.
+
 ## Not in Phase 4
 
 Path C practitioner summary pack (Phase 5); Path B; real partners; LLM matching.

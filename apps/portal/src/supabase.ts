@@ -1,5 +1,6 @@
 import { createClient, type Session, type User } from '@supabase/supabase-js';
 
+import { PATH_C_DISCLAIMER } from './disclaimers';
 import type {
   Clinic,
   PractitionerProfile,
@@ -263,10 +264,7 @@ function mapPack(row: Record<string, unknown>): SummaryPack {
     clinical_booking_id: (row.clinical_booking_id as string | null) ?? null,
     clinic_id: (row.clinic_id as string | null) ?? null,
     path_tag: String(row.path_tag ?? 'Path A'),
-    disclaimer: String(
-      row.disclaimer ??
-        'Care-navigation only — not a diagnosis or medical advice.',
-    ),
+    disclaimer: String(row.disclaimer ?? PATH_C_DISCLAIMER),
     goals,
     spend_buckets: spend,
     match_reason: (row.match_reason as string | null) ?? null,

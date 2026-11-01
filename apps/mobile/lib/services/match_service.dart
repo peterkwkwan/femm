@@ -157,6 +157,46 @@ class MatchService {
         .toList();
   }
 
+  /// Leave-and-return while still on the match screen: refresh only.
+  /// Reuses an active hold or existing clinical booking; does **not** take a
+  /// new hold if the previous one expired (UI shows re-hold CTA instead).
+  Future<({PathAMatch? match, ClinicalBooking? clinical, bool holdExpired})>
+      resumeMatchState(PathASession session) async {
+    final existingBooking = await fetchClinicalBooking(session.id);
+    if (existingBooking != null) {
+      final match = await fetchMatch(session.id);
+      if (match != null) {
+        return (match: match, clinical: existingBooking, holdExpired: false);
+      }
+      final clinic = await fetchClinic(existingBooking.clinicId);
+      final slot = await fetchSlot(existingBooking.slotId);
+      return (
+        match: PathAMatch(
+          sessionId: session.id,
+          specialty: existingBooking.specialty,
+          whyCopy: existingBooking.whyCopy,
+          clinicId: existingBooking.clinicId,
+          slotId: existingBooking.slotId,
+          clinic: clinic,
+          slot: slot,
+        ),
+        clinical: existingBooking,
+        holdExpired: false,
+      );
+    }
+
+    await releaseExpiredHolds();
+    final existing = await fetchMatch(session.id);
+    if (existing != null && existing.hasActiveHold) {
+      return (match: existing, clinical: null, holdExpired: false);
+    }
+    return (
+      match: existing,
+      clinical: null,
+      holdExpired: true,
+    );
+  }
+
   /// Run engine → pick slot → 15-min hold. Reuses active hold when still valid.
   Future<({PathAMatch match, ClinicalBooking? clinical})> startOrResumeMatch(
     PathASession session,

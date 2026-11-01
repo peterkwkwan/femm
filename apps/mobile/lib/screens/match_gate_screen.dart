@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../constants/disclaimers.dart';
 import '../models/path_a_session.dart';
 import '../models/survey_question.dart';
 import '../services/intake_service.dart';
@@ -112,7 +113,7 @@ class _MatchGateScreenState extends State<MatchGateScreen> {
                       child: Padding(
                         padding: const EdgeInsets.all(12),
                         child: Text(
-                          'Care-navigation only — not a diagnosis.',
+                          FemmDisclaimers.oneLiner,
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ),

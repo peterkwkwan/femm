@@ -1,4 +1,5 @@
 import './style.css';
+import { PATH_C_DISCLAIMER, PORTAL_NOTE } from './disclaimers';
 import {
   claimDemoClinic,
   downloadLabPdf,
@@ -126,7 +127,7 @@ function renderSignedOut(error?: string): void {
       <p class="brand">femm</p>
       <h1>Practitioner portal</h1>
       <p class="lede">Path C pre-visit packs for booked appointments. Google Auth via Supabase.</p>
-      <p class="note">Hong Kong prototype · English UI · not a diagnosis</p>
+      <p class="note">${esc(PORTAL_NOTE)}</p>
       ${
         usingPlaceholders
           ? '<p class="note">Placeholders active — copy <code>.env.example</code> → <code>.env.local</code> with your project URL + anon key.</p>'
@@ -173,7 +174,7 @@ function renderClaimClinic(
       <p class="note">Signed in as ${esc(profile.email ?? profile.id)}</p>
       ${error ? `<p class="error">${esc(error)}</p>` : ''}
       <ul class="clinic-list">${options || '<li class="note">No clinics — run Phase 1 seed.</li>'}</ul>
-      <p class="disclaimer sticky">Care-navigation only — not a diagnosis or medical advice.</p>
+      <p class="disclaimer sticky">${esc(PATH_C_DISCLAIMER)}</p>
     </main>
   `;
 
@@ -231,7 +232,7 @@ function renderAppointments(
           '<li class="note empty">No clinical bookings for this clinic yet. Complete Path A confirm in the Flutter app.</li>'
         }
       </ul>
-      <p class="disclaimer sticky">Care-navigation only — not a diagnosis or medical advice.</p>
+      <p class="disclaimer sticky">${esc(PATH_C_DISCLAIMER)}</p>
     </main>
   `;
 
@@ -367,7 +368,7 @@ function renderPack(
         </div>
       </section>
 
-      <p class="disclaimer sticky">${esc(pack.disclaimer)}</p>
+      <p class="disclaimer sticky">${esc(pack.disclaimer || PATH_C_DISCLAIMER)}</p>
       <p class="note">Signed in as ${esc(profile.email ?? profile.id)}</p>
     </main>
   `;
