@@ -123,6 +123,24 @@ button:disabled {
   border: 1px solid color-mix(in srgb, var(--error) 30%, white);
 }
 
+.meta {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.35rem 1rem;
+  margin: 1rem 0 0;
+  font-size: 0.92rem;
+}
+
+.meta dt {
+  margin: 0;
+  color: var(--muted);
+}
+
+.meta dd {
+  margin: 0;
+  word-break: break-all;
+}
+
 .disclaimer {
   margin: 1.5rem 0 0;
   padding: 0.85rem 1rem;

@@ -30,6 +30,8 @@ Use **two Google accounts**: Account A = Flutter user, Account B = practitioner 
    # http://localhost:5173
    ```
 
+   Confirm Supabase **Site URL** / **Redirect URLs** include `http://localhost:5173` (portal `signInWithOAuth` uses `redirectTo: window.location.origin`). Also confirm `apps/portal/.env.local` has real `VITE_SUPABASE_*` values and Phase 5 migration is applied (`profiles.clinic_id`).
+
 4. Start Flutter (device or emulator) with real dart-defines:
 
    ```bash

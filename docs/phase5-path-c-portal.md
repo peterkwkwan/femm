@@ -37,8 +37,10 @@ Note which **clinic** was booked (specialty / clinic name).
 
 ### B. Practitioner Path C (portal)
 
+**Auth redirect (required for Google OAuth):** Supabase Dashboard → **Authentication → URL Configuration** — **Site URL** and **Redirect URLs** must include `http://localhost:5173` (see also [`supabase-setup.md`](./supabase-setup.md) §2d). Without that, OAuth returns to a signed-out login page even when Google succeeds.
+
 1. `cd apps/portal && cp .env.example .env.local` (fill `VITE_SUPABASE_*`) → `npm run dev` → `http://localhost:5173`.
-2. Sign in with a **different** Google account (practitioner). Prefer a separate test user so mobile `role: user` is not overwritten.
+2. Sign in with a **different** Google account (practitioner). Prefer a separate test user so mobile `role: user` is not overwritten. If Auth works but the portal shows a setup/migration error, apply the Phase 5 SQL above (`profiles.clinic_id`) and retry — do not expect `[object Object]` red text (errors are formatted from Auth/PostgREST `.message`).
 3. **Claim a demo clinic** — pick the same fictional clinic that received the booking.
 4. **Upcoming appointments** lists that booking (slot time + patient snapshot).
 5. **Open summary** → see goals, spend, why-match, flagged labs, path tag, disclaimer.

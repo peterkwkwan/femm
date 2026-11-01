@@ -1,5 +1,8 @@
+import type { User } from '@supabase/supabase-js';
+
 import './style.css';
 import { PATH_C_DISCLAIMER, PORTAL_NOTE } from './disclaimers';
+import { formatError } from './formatError';
 import {
   claimDemoClinic,
   downloadLabPdf,
@@ -32,6 +35,13 @@ if (!app) {
 type View =
   | { name: 'signed-out'; error?: string }
   | { name: 'loading'; message: string }
+  | {
+      /** Session ok but profile/clinic bootstrap failed — stay signed in. */
+      name: 'session-error';
+      email: string | null;
+      uid: string;
+      error: string;
+    }
   | {
       name: 'claim-clinic';
       profile: PractitionerProfile;
@@ -104,6 +114,9 @@ function render(): void {
           <p class="lede">${esc(view.message)}</p>
         </main>`;
       break;
+    case 'session-error':
+      renderSessionError(view.email, view.uid, view.error);
+      break;
     case 'claim-clinic':
       renderClaimClinic(view.profile, view.clinics, view.error);
       break;
@@ -142,6 +155,40 @@ function renderSignedOut(error?: string): void {
   document
     .querySelector('#google-signin')
     ?.addEventListener('click', () => void onGoogle());
+}
+
+function renderSessionError(
+  email: string | null,
+  uid: string,
+  error: string,
+): void {
+  app!.innerHTML = `
+    <main class="shell shell-wide">
+      <header class="top">
+        <div>
+          <p class="brand">femm</p>
+          <h1>Signed in — setup incomplete</h1>
+        </div>
+        <button type="button" class="secondary" id="signout">Sign out</button>
+      </header>
+      <p class="lede">Google Auth succeeded, but the portal could not load your practitioner profile or clinic.</p>
+      <p class="error">${esc(error)}</p>
+      <dl class="meta">
+        <dt>UID</dt><dd>${esc(uid)}</dd>
+        <dt>Email</dt><dd>${esc(email ?? '(none)')}</dd>
+      </dl>
+      <p class="note">Check Phase 5 migration (<code>profiles.clinic_id</code>), <code>apps/portal/.env.local</code>, and Supabase Auth Site URL / redirect allow list for <code>http://localhost:5173</code>.</p>
+      <div class="actions">
+        <button type="button" id="retry-bootstrap">Retry</button>
+      </div>
+    </main>
+  `;
+  document
+    .querySelector('#signout')
+    ?.addEventListener('click', () => void onSignOut());
+  document
+    .querySelector('#retry-bootstrap')
+    ?.addEventListener('click', () => void retryBootstrap());
 }
 
 function renderClaimClinic(
@@ -389,13 +436,87 @@ function renderPack(
   });
 }
 
+let lastAuthUser: User | null = null;
+
+function showSessionError(
+  email: string | null,
+  uid: string,
+  err: unknown,
+): void {
+  view = {
+    name: 'session-error',
+    email,
+    uid,
+    error: formatError(err),
+  };
+  render();
+}
+
+async function retryBootstrap(): Promise<void> {
+  if (!lastAuthUser) {
+    view = {
+      name: 'signed-out',
+      error: 'Session lost — sign in again.',
+    };
+    render();
+    return;
+  }
+  await bootstrapSignedIn(lastAuthUser);
+}
+
+async function bootstrapSignedIn(user: User): Promise<void> {
+  if (usingPlaceholders) {
+    view = {
+      name: 'signed-out',
+      error: 'Configure VITE_SUPABASE_* before signing in.',
+    };
+    render();
+    return;
+  }
+
+  profileSyncing = true;
+  view = { name: 'loading', message: 'Signing in…' };
+  render();
+
+  try {
+    const profile = await upsertOwnProfile(user);
+    await loadPractitionerHome(profile);
+  } catch (err) {
+    // Prefer claim UI when clinics are reachable (session ok, profile row flaky).
+    try {
+      const clinics = await listClinics();
+      const existing = await fetchOwnProfile(user.id).catch(() => null);
+      view = {
+        name: 'claim-clinic',
+        profile: existing ?? {
+          id: user.id,
+          email: user.email ?? null,
+          display_name:
+            (user.user_metadata?.full_name as string | undefined) ??
+            (user.user_metadata?.name as string | undefined) ??
+            null,
+          role: 'practitioner',
+          clinic_id: null,
+        },
+        clinics,
+        error: formatError(err),
+      };
+      render();
+    } catch {
+      showSessionError(user.email ?? null, user.id, err);
+    }
+  } finally {
+    profileSyncing = false;
+  }
+}
+
 async function onGoogle(): Promise<void> {
   try {
     await signInWithGoogle();
   } catch (err) {
     view = {
       name: 'signed-out',
-      error: err instanceof Error ? err.message : String(err),
+      error: formatError(err),
     };
     render();
   }
@@ -407,7 +528,7 @@ async function onSignOut(): Promise<void> {
   } catch (err) {
     view = {
       name: 'signed-out',
-      error: err instanceof Error ? err.message : String(err),
+      error: formatError(err),
     };
     render();
   }
@@ -425,19 +546,19 @@ async function onClaimClinic(clinicId: string): Promise<void> {
   } catch (err) {
     const clinics = await listClinics().catch(() => [] as Clinic[]);
     const profile = currentUserId
-      ? await fetchOwnProfile(currentUserId)
+      ? await fetchOwnProfile(currentUserId).catch(() => null)
       : null;
     view = {
       name: 'claim-clinic',
       profile: profile ?? {
         id: currentUserId ?? '',
-        email: null,
+        email: lastAuthUser?.email ?? null,
         display_name: null,
         role: 'practitioner',
         clinic_id: null,
       },
       clinics,
-      error: err instanceof Error ? err.message : String(err),
+      error: formatError(err),
     };
     render();
   }
@@ -464,7 +585,7 @@ async function onOpenPack(packId: string): Promise<void> {
     };
     render();
   } catch (err) {
-    await loadPractitionerHome(profile, err instanceof Error ? err.message : String(err));
+    await loadPractitionerHome(profile, formatError(err));
   }
 }
 
@@ -475,7 +596,7 @@ async function onDownloadPdf(pack: SummaryPack): Promise<void> {
   } catch (err) {
     view = {
       ...view,
-      error: err instanceof Error ? err.message : String(err),
+      error: formatError(err),
     };
     render();
   }
@@ -513,15 +634,24 @@ async function loadPractitionerHome(
     view = { name: 'appointments', profile, clinic, appointments, error };
     render();
   } catch (err) {
-    view = {
-      name: 'signed-out',
-      error: err instanceof Error ? err.message : String(err),
-    };
-    render();
+    // Stay signed in — do not dump opaque objects onto the login page.
+    try {
+      const clinics = await listClinics();
+      view = {
+        name: 'claim-clinic',
+        profile: { ...profile, clinic_id: null },
+        clinics,
+        error: formatError(err),
+      };
+      render();
+    } catch {
+      showSessionError(profile.email, profile.id, err);
+    }
   }
 }
 
 watchAuth((user) => {
+  lastAuthUser = user;
   if (!user) {
     currentUserId = null;
     view = { name: 'signed-out' };
@@ -530,31 +660,7 @@ watchAuth((user) => {
   }
 
   currentUserId = user.id;
-  if (profileSyncing || usingPlaceholders) {
-    if (usingPlaceholders) {
-      view = {
-        name: 'signed-out',
-        error: 'Configure VITE_SUPABASE_* before signing in.',
-      };
-      render();
-    }
-    return;
-  }
+  if (profileSyncing) return;
 
-  profileSyncing = true;
-  view = { name: 'loading', message: 'Signing in…' };
-  render();
-
-  void upsertOwnProfile(user)
-    .then((profile) => loadPractitionerHome(profile))
-    .catch((err) => {
-      view = {
-        name: 'signed-out',
-        error: err instanceof Error ? err.message : String(err),
-      };
-      render();
-    })
-    .finally(() => {
-      profileSyncing = false;
-    });
+  void bootstrapSignedIn(user);
 });
