@@ -6,6 +6,7 @@ import 'constants/disclaimers.dart';
 import 'screens/lab_upload_screen.dart';
 import 'services/auth_service.dart';
 import 'theme/petal_soft.dart';
+import 'widgets/brand_forward_welcome.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -108,107 +109,11 @@ class SignInShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'femm',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: PetalSoft.accent,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.4,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: ListView(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: AspectRatio(
-                        aspectRatio: 16 / 10,
-                        child: ColoredBox(
-                          color: PetalSoft.accentSoft,
-                          child: Image.asset(
-                            'assets/images/welcome-atmosphere.png',
-                            fit: BoxFit.cover,
-                            alignment: const Alignment(0, -0.35),
-                            errorBuilder: (_, __, ___) => const ColoredBox(
-                              color: PetalSoft.accentSoft,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      'Care that meets you after the health check',
-                      style: theme.textTheme.headlineMedium,
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      'Upload labs, share how you already look after yourself, '
-                      'and tell us what you’re dealing with. We book the next '
-                      'clinical step for you.',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: PetalSoft.muted,
-                      ),
-                    ),
-                    if (usingPlaceholders) ...[
-                      const SizedBox(height: 16),
-                      Text(
-                        'Supabase placeholders active — set SUPABASE_URL, '
-                        'SUPABASE_ANON_KEY, and GOOGLE_SERVER_CLIENT_ID '
-                        '(see root README).',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: PetalSoft.muted,
-                        ),
-                      ),
-                    ],
-                    if (error != null) ...[
-                      const SizedBox(height: 16),
-                      Text(
-                        error!,
-                        style: TextStyle(color: theme.colorScheme.error),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              FilledButton(
-                onPressed: busy ? null : onGoogleSignIn,
-                child: busy
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Text('Get started'),
-              ),
-              const SizedBox(height: 12),
-              TextButton(
-                onPressed: busy ? null : onGoogleSignIn,
-                child: Text(
-                  'Already have an account? Sign in with Google',
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: PetalSoft.muted,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+    return BrandForwardWelcome(
+      busy: busy,
+      error: error,
+      usingPlaceholders: usingPlaceholders,
+      onGoogleSignIn: onGoogleSignIn,
     );
   }
 }
