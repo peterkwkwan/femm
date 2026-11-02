@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('lab upload petal soft empty state', (tester) async {
+  testWidgets('stacked labs cards + encrypted storage copy', (tester) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -16,11 +16,20 @@ void main() {
     );
     await tester.pump();
 
+    expect(find.text('LABS · STEP 1 OF 4'), findsOneWidget);
     expect(find.text('Your health-check labs'), findsOneWidget);
-    expect(find.text('Tap to choose a PDF'), findsOneWidget);
-    expect(find.text('Choose PDF'), findsOneWidget);
-    expect(find.text('Use demo PDF instead'), findsOneWidget);
-    expect(find.text('Continue Path A'), findsNothing);
+    expect(find.text('Upload PDF'), findsOneWidget);
+    expect(find.text('Take a photo'), findsOneWidget);
+    expect(find.text('Prototype · camera won’t open'), findsOneWidget);
+    expect(find.text(LabUploadScreen.storageHelperCopy), findsOneWidget);
+    expect(
+      find.text('Original PDF is stored privately for later Path C download.'),
+      findsNothing,
+    );
+
+    await tester.tap(find.text('Take a photo'));
+    await tester.pump();
+    expect(find.text('Camera isn’t wired in this prototype.'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }
