@@ -46,10 +46,11 @@ class DeepAccentDuskWelcome extends StatelessWidget {
           Positioned(
             top: topInset + 12,
             left: 22,
-            child: Text(
+            child: const Text(
               'femm',
-              style: theme.textTheme.titleLarge?.copyWith(
-                color: PetalSoft.ink,
+              style: TextStyle(
+                // Solid ink — do not inherit theme/accent tint via copyWith.
+                color: Color(0xFF2A1F1C),
                 fontWeight: FontWeight.w700,
                 fontSize: 24,
                 height: 1,

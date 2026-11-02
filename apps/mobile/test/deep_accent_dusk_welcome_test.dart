@@ -26,7 +26,7 @@ void main() {
 
     expect(find.text('femm'), findsOneWidget);
     final femm = tester.widget<Text>(find.text('femm'));
-    expect(femm.style?.color, PetalSoft.ink);
+    expect(femm.style?.color, const Color(0xFF2A1F1C));
 
     expect(find.text('Welcome'), findsOneWidget);
     expect(find.text(kWelcomeHelperCopy), findsOneWidget);
