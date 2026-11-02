@@ -3,13 +3,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'config/supabase_config.dart';
 import 'constants/disclaimers.dart';
-import 'models/path_a_session.dart';
 import 'screens/lab_upload_screen.dart';
-import 'screens/match_gate_screen.dart';
-import 'screens/spend_screen.dart';
-import 'screens/symptoms_screen.dart';
 import 'services/auth_service.dart';
-import 'services/intake_service.dart';
 import 'theme/petal_soft.dart';
 
 Future<void> main() async {
@@ -218,7 +213,7 @@ class SignInShell extends StatelessWidget {
   }
 }
 
-class SignedInShell extends StatefulWidget {
+class SignedInShell extends StatelessWidget {
   const SignedInShell({
     super.key,
     required this.user,
@@ -233,142 +228,67 @@ class SignedInShell extends StatefulWidget {
   final VoidCallback onSignOut;
 
   @override
-  State<SignedInShell> createState() => _SignedInShellState();
-}
-
-class _SignedInShellState extends State<SignedInShell> {
-  final IntakeService _intake = IntakeService();
-  PathASession? _session;
-  bool _loadingSession = true;
-  String? _sessionError;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadSession();
-  }
-
-  Future<void> _loadSession() async {
-    setState(() {
-      _loadingSession = true;
-      _sessionError = null;
-    });
-    try {
-      final session = await _intake.fetchLatestSession();
-      if (!mounted) return;
-      setState(() {
-        _session = session;
-        _loadingSession = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _sessionError = e.toString();
-        _loadingSession = false;
-      });
-    }
-  }
-
-  Future<void> _openPath(Widget screen) async {
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => screen),
-    );
-    await _loadSession();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final meta = widget.user.userMetadata ?? const <String, dynamic>{};
+    final theme = Theme.of(context);
+    final meta = user.userMetadata ?? const <String, dynamic>{};
     final displayName = (meta['full_name'] ?? meta['name'])?.toString();
-    final session = _session;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('femm'),
         actions: [
           TextButton(
-            onPressed: widget.busy ? null : widget.onSignOut,
+            onPressed: busy ? null : onSignOut,
             child: const Text('Sign out'),
           ),
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
               'Signed in',
-              style: Theme.of(context).textTheme.headlineSmall,
+              style: theme.textTheme.headlineSmall,
             ),
             const SizedBox(height: 12),
-            Text('UID: ${widget.user.id}'),
-            if (widget.user.email != null) Text('Email: ${widget.user.email}'),
-            if (displayName != null) Text('Name: $displayName'),
+            if (displayName != null)
+              Text(
+                displayName,
+                style: theme.textTheme.titleMedium,
+              ),
+            if (user.email != null)
+              Text(
+                user.email!,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: PetalSoft.muted,
+                ),
+              ),
             const SizedBox(height: 16),
             Text(
               'Path A — labs → routine → symptoms → match. '
               '${FemmDisclaimers.oneLiner}',
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: PetalSoft.muted,
+              ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             FilledButton(
-              onPressed: () async {
-                await _openPath(const LabUploadScreen());
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const LabUploadScreen(),
+                  ),
+                );
               },
               child: const Text('Upload lab PDF'),
             ),
-            if (_loadingSession) ...[
-              const SizedBox(height: 16),
-              const LinearProgressIndicator(),
-            ] else if (session != null) ...[
+            if (error != null) ...[
               const SizedBox(height: 16),
               Text(
-                'Continue Path A',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 8),
-              if (!session.hasSpend)
-                OutlinedButton(
-                  onPressed: () => _openPath(
-                    SpendScreen(session: session, intakeService: _intake),
-                  ),
-                  child: const Text('Your routine'),
-                )
-              else if (!session.hasSurvey)
-                OutlinedButton(
-                  onPressed: () => _openPath(
-                    SymptomsScreen(session: session, intakeService: _intake),
-                  ),
-                  child: const Text('Select symptoms'),
-                )
-              else
-                OutlinedButton(
-                  onPressed: () => _openPath(
-                    MatchGateScreen(session: session, intakeService: _intake),
-                  ),
-                  child: const Text('Open match gate'),
-                ),
-              const SizedBox(height: 8),
-              Text(
-                session.readyForMatch
-                    ? 'Routine + symptoms done — open match for clinical hold + upsell.'
-                    : 'Match stays locked until routine and symptoms are saved.',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ],
-            if (_sessionError != null) ...[
-              const SizedBox(height: 12),
-              Text(
-                _sessionError!,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-              ),
-            ],
-            if (widget.error != null) ...[
-              const SizedBox(height: 12),
-              Text(
-                widget.error!,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
+                error!,
+                style: TextStyle(color: theme.colorScheme.error),
               ),
             ],
           ],
