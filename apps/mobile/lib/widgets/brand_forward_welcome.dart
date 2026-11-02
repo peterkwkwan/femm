@@ -153,6 +153,9 @@ class BrandForwardWelcome extends StatelessWidget {
 class _WaveAtmosphere extends StatelessWidget {
   const _WaveAtmosphere();
 
+  /// Portrait sunset yoga silhouette for Brand-Forward login.
+  static const String assetPath = 'assets/images/login-yoga-silhouette.png';
+
   @override
   Widget build(BuildContext context) {
     return ClipPath(
@@ -161,22 +164,18 @@ class _WaveAtmosphere extends StatelessWidget {
         fit: StackFit.expand,
         children: [
           const ColoredBox(color: PetalSoft.bg),
-          // Landscape asset in a tall wave: fitWidth (not cover) so the full
-          // beach meditation scene stays visible instead of a tight face crop.
-          Align(
-            alignment: const Alignment(0, -0.15),
-            child: Image.asset(
-              'assets/images/welcome-atmosphere.png',
-              width: double.infinity,
-              fit: BoxFit.fitWidth,
+          // Portrait asset under the wave: cover + slight downward bias so the
+          // full dancer silhouette and beach reflection read clearly (not sky-only).
+          const Positioned.fill(
+            child: Image(
+              image: AssetImage(assetPath),
+              fit: BoxFit.cover,
+              alignment: Alignment(0, 0.12),
               filterQuality: FilterQuality.medium,
-              errorBuilder: (_, __, ___) => const SizedBox.expand(
-                child: ColoredBox(color: PetalSoft.accentSoft),
-              ),
             ),
           ),
           ColoredBox(
-            color: PetalSoft.accent.withValues(alpha: 0.16),
+            color: PetalSoft.accent.withValues(alpha: 0.12),
           ),
         ],
       ),
