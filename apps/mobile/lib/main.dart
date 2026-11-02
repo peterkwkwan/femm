@@ -6,7 +6,7 @@ import 'constants/disclaimers.dart';
 import 'screens/lab_upload_screen.dart';
 import 'services/auth_service.dart';
 import 'theme/petal_soft.dart';
-import 'widgets/brand_forward_welcome.dart';
+import 'widgets/deep_accent_dusk_welcome.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -109,7 +109,7 @@ class SignInShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BrandForwardWelcome(
+    return DeepAccentDuskWelcome(
       busy: busy,
       error: error,
       usingPlaceholders: usingPlaceholders,

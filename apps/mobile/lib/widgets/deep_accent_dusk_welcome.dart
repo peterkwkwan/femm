@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 
 import '../theme/petal_soft.dart';
+import 'deep_accent_dusk_hills.dart';
 import 'google_g_mark.dart';
-import 'welcome_wave_clipper.dart';
 
 const String kWelcomeHelperCopy =
     'After your health check or labs, we route you toward recovery care that fits.';
 
-/// Brand-Forward femm login: wavy photo (~55%) + cream brand panel + Google CTA.
-class BrandForwardWelcome extends StatelessWidget {
-  const BrandForwardWelcome({
+/// Deep Accent Dusk login — animated flat hills, ink wordmark, Google CTA.
+class DeepAccentDuskWelcome extends StatelessWidget {
+  const DeepAccentDuskWelcome({
     super.key,
     required this.busy,
     required this.error,
@@ -25,7 +25,10 @@ class BrandForwardWelcome extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final size = MediaQuery.sizeOf(context);
+    final topInset = MediaQuery.paddingOf(context).top;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
+    final hillsHeight = size.height * 0.58;
 
     return Scaffold(
       backgroundColor: PetalSoft.surface,
@@ -33,10 +36,26 @@ class BrandForwardWelcome extends StatelessWidget {
         fit: StackFit.expand,
         children: [
           const ColoredBox(color: PetalSoft.surface),
-          const _WaveAtmosphere(),
-          CustomPaint(
-            painter: const WelcomeWaveEdgePainter(color: PetalSoft.surface),
-            child: const SizedBox.expand(),
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: hillsHeight,
+            child: const DeepAccentDuskHills(),
+          ),
+          Positioned(
+            top: topInset + 12,
+            left: 22,
+            child: Text(
+              'femm',
+              style: theme.textTheme.titleLarge?.copyWith(
+                color: PetalSoft.ink,
+                fontWeight: FontWeight.w700,
+                fontSize: 24,
+                height: 1,
+                letterSpacing: -0.4,
+              ),
+            ),
           ),
           Positioned(
             left: 24,
@@ -47,31 +66,18 @@ class BrandForwardWelcome extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'femm',
-                  style: theme.textTheme.displaySmall?.copyWith(
-                    fontFamily: PetalSoft.displayFontFamily,
-                    color: PetalSoft.accent,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 40,
-                    height: 1,
-                    letterSpacing: -1.2,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
                   'Welcome',
                   style: theme.textTheme.headlineSmall?.copyWith(
-                    fontFamily: null,
                     color: PetalSoft.ink,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 28,
-                    height: 1.15,
-                    letterSpacing: -0.4,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 26,
+                    height: 1.1,
+                    letterSpacing: -0.6,
                   ),
                 ),
                 const SizedBox(height: 8),
                 ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 280),
+                  constraints: const BoxConstraints(maxWidth: 260),
                   child: Text(
                     kWelcomeHelperCopy,
                     style: theme.textTheme.bodyMedium?.copyWith(
@@ -101,7 +107,7 @@ class BrandForwardWelcome extends StatelessWidget {
                     ),
                   ),
                 ],
-                const SizedBox(height: 18),
+                const SizedBox(height: 16),
                 FilledButton(
                   style: FilledButton.styleFrom(
                     backgroundColor: PetalSoft.ink,
@@ -143,39 +149,6 @@ class BrandForwardWelcome extends StatelessWidget {
                 ),
               ],
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _WaveAtmosphere extends StatelessWidget {
-  const _WaveAtmosphere();
-
-  /// Portrait sunset yoga silhouette for Brand-Forward login.
-  static const String assetPath = 'assets/images/login-yoga-silhouette.png';
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipPath(
-      clipper: const WelcomeWaveClipper(),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          const ColoredBox(color: PetalSoft.bg),
-          // Portrait asset under the wave: cover + slight downward bias so the
-          // full dancer silhouette and beach reflection read clearly (not sky-only).
-          const Positioned.fill(
-            child: Image(
-              image: AssetImage(assetPath),
-              fit: BoxFit.cover,
-              alignment: Alignment(0, 0.12),
-              filterQuality: FilterQuality.medium,
-            ),
-          ),
-          ColoredBox(
-            color: PetalSoft.accent.withValues(alpha: 0.12),
           ),
         ],
       ),
