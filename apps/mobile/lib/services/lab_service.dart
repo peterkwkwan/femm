@@ -17,12 +17,99 @@ class LabService {
   static const String bucket = 'lab-pdfs';
   static const String extractFunction = 'extract-lab-pdf';
 
+  static const String signedOutMessage =
+      "You're signed out. Sign in again to upload your lab PDF.";
+
+  /// Refresh when the access token is missing, already expired, or within
+  /// [skewSeconds] of expiry so Storage / Edge Function JWT checks pass.
+  static const int refreshSkewSeconds = 60;
+
   String get _uid {
     final id = _client.auth.currentUser?.id;
     if (id == null) {
-      throw StateError('Not signed in');
+      throw StateError(signedOutMessage);
     }
     return id;
+  }
+
+  /// True when Storage rejected the request because the JWT `exp` claim is stale.
+  static bool isExpiredJwtStorageError(Object error) {
+    if (error is! StorageException) return false;
+    final code = error.statusCode;
+    final msg = error.message.toLowerCase();
+    final unauthorized = error.error?.toLowerCase() == 'unauthorized' ||
+        code == '403' ||
+        code == '401';
+    final expClaim = msg.contains('exp') &&
+        (msg.contains('timestamp') || msg.contains('claim'));
+    return unauthorized && (expClaim || msg.contains('jwt'));
+  }
+
+  /// Map auth / expired-JWT failures to a short user-facing line.
+  static String userFacingError(Object error) {
+    if (error is StateError && error.message == signedOutMessage) {
+      return signedOutMessage;
+    }
+    if (error is AuthException) {
+      return signedOutMessage;
+    }
+    if (isExpiredJwtStorageError(error)) {
+      return signedOutMessage;
+    }
+    if (error is StorageException) {
+      final code = error.statusCode;
+      if (code == '401' || code == '403') {
+        return signedOutMessage;
+      }
+    }
+    return error.toString();
+  }
+
+  Future<void> ensureFreshSession({bool force = false}) async {
+    final session = _client.auth.currentSession;
+    if (session == null) {
+      throw StateError(signedOutMessage);
+    }
+
+    final expiresAt = session.expiresAt;
+    final nowSec = DateTime.now().toUtc().millisecondsSinceEpoch ~/ 1000;
+    final stale =
+        expiresAt == null || expiresAt <= nowSec + refreshSkewSeconds;
+    if (!force && !stale) {
+      return;
+    }
+
+    try {
+      final refreshed = await _client.auth.refreshSession();
+      if (refreshed.session == null && _client.auth.currentSession == null) {
+        throw StateError(signedOutMessage);
+      }
+    } on AuthException {
+      throw StateError(signedOutMessage);
+    }
+  }
+
+  Future<T> _withFreshAuth<T>(Future<T> Function() action) async {
+    await ensureFreshSession();
+    try {
+      return await action();
+    } on StorageException catch (error) {
+      if (!isExpiredJwtStorageError(error)) {
+        rethrow;
+      }
+      // Access token went stale mid-flow — force refresh and retry once.
+      await ensureFreshSession(force: true);
+      try {
+        return await action();
+      } on StorageException catch (retryError) {
+        if (isExpiredJwtStorageError(retryError) ||
+            retryError.statusCode == '401' ||
+            retryError.statusCode == '403') {
+          throw StateError(signedOutMessage);
+        }
+        rethrow;
+      }
+    }
   }
 
   /// Upload PDF bytes under `{uid}/{documentId}.pdf`, insert `lab_documents`,
@@ -31,19 +118,23 @@ class LabService {
     required Uint8List bytes,
     required String originalFilename,
   }) async {
+    await ensureFreshSession();
     final uid = _uid;
     final documentId = _uuid.v4();
     final storagePath = '$uid/$documentId.pdf';
 
-    await _client.storage.from(bucket).uploadBinary(
-          storagePath,
-          bytes,
-          fileOptions: const FileOptions(
-            contentType: 'application/pdf',
-            upsert: false,
-          ),
-        );
+    await _withFreshAuth(() {
+      return _client.storage.from(bucket).uploadBinary(
+            storagePath,
+            bytes,
+            fileOptions: const FileOptions(
+              contentType: 'application/pdf',
+              upsert: false,
+            ),
+          );
+    });
 
+    await ensureFreshSession();
     final inserted = await _client
         .from('lab_documents')
         .insert(<String, dynamic>{
@@ -58,6 +149,7 @@ class LabService {
 
     final document = LabDocument.fromJson(inserted);
 
+    await ensureFreshSession();
     final response = await _client.functions.invoke(
       extractFunction,
       body: <String, dynamic>{'document_id': documentId},
@@ -103,6 +195,7 @@ class LabService {
     required String documentId,
     required List<LabBiomarker> rows,
   }) async {
+    await ensureFreshSession();
     final uid = _uid;
     final now = DateTime.now().toUtc().toIso8601String();
 

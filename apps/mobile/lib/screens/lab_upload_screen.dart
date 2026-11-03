@@ -55,7 +55,7 @@ class _LabUploadScreenState extends State<LabUploadScreen> {
       );
     } catch (e) {
       setState(() {
-        _error = e.toString();
+        _error = LabService.userFacingError(e);
       });
     } finally {
       if (mounted) {
