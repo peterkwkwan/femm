@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'config/supabase_config.dart';
-import 'constants/disclaimers.dart';
-import 'screens/lab_upload_screen.dart';
+import 'screens/signed_in_home.dart';
 import 'services/auth_service.dart';
 import 'theme/petal_soft.dart';
 import 'widgets/deep_accent_dusk_welcome.dart';
@@ -134,71 +133,11 @@ class SignedInShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final meta = user.userMetadata ?? const <String, dynamic>{};
-    final displayName = (meta['full_name'] ?? meta['name'])?.toString();
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('femm'),
-        actions: [
-          TextButton(
-            onPressed: busy ? null : onSignOut,
-            child: const Text('Sign out'),
-          ),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Signed in',
-              style: theme.textTheme.headlineSmall,
-            ),
-            const SizedBox(height: 12),
-            if (displayName != null)
-              Text(
-                displayName,
-                style: theme.textTheme.titleMedium,
-              ),
-            if (user.email != null)
-              Text(
-                user.email!,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: PetalSoft.muted,
-                ),
-              ),
-            const SizedBox(height: 16),
-            Text(
-              'Path A — labs → routine → symptoms → match. '
-              '${FemmDisclaimers.oneLiner}',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: PetalSoft.muted,
-              ),
-            ),
-            const SizedBox(height: 24),
-            FilledButton(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const LabUploadScreen(),
-                  ),
-                );
-              },
-              child: const Text('Upload lab PDF'),
-            ),
-            if (error != null) ...[
-              const SizedBox(height: 16),
-              Text(
-                error!,
-                style: TextStyle(color: theme.colorScheme.error),
-              ),
-            ],
-          ],
-        ),
-      ),
+    return SignedInHome(
+      user: user,
+      busy: busy,
+      error: error,
+      onSignOut: onSignOut,
     );
   }
 }
