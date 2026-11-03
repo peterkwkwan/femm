@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 /// Locked Petal Soft visual direction (Path A mockups).
 ///
 /// Canvas tokens: blush canvas, rose accent, Inter Air UI typography,
-/// Cormorant Soft for the login majestic wordmark only.
+/// Cormorant Soft italic for femm wordmarks (login hero + Mark-Led nav).
 abstract final class PetalSoft {
   static const Color bg = Color(0xFFF8EFEA);
   static const Color surface = Color(0xFFFFF9F6);
@@ -18,10 +18,10 @@ abstract final class PetalSoft {
   /// Soft sky orb in Dawn Mist wash.
   static const Color sky = Color(0xFFE8D5CE);
 
-  /// Inter Air — UI sans (Welcome / helper / CTA / nav wordmark).
+  /// Inter Air — UI sans (Welcome / helper / CTA).
   static const String fontFamily = 'Inter';
 
-  /// Cormorant Soft — login majestic femm wordmark only.
+  /// Cormorant Soft — femm wordmark face (Dawn Mist login + Mark-Led nav).
   static const String displayFontFamily = 'Cormorant Garamond';
 
   /// Inter Air Welcome: medium, larger, −0.03em tracking.
@@ -29,10 +29,11 @@ abstract final class PetalSoft {
   static const FontWeight welcomeWeight = FontWeight.w500;
   static const double welcomeTrackingEm = -0.03;
 
-  /// Inter Air nav wordmark (femm): medium, 0.04em tracking.
+  /// Cormorant Soft nav wordmark (femm): quieter scale of the login face.
   static const double wordmarkSize = 16;
-  static const FontWeight wordmarkWeight = FontWeight.w500;
-  static const double wordmarkTrackingEm = 0.04;
+  static const FontWeight wordmarkWeight = FontWeight.w600;
+  static const double wordmarkTrackingEm = 0.06;
+  static const FontStyle wordmarkStyle = FontStyle.italic;
 
   /// Cormorant Soft login wordmark: italic semibold ~44 / 0.06em.
   static const double majesticWordmarkSize = 44;
@@ -53,21 +54,23 @@ abstract final class PetalSoft {
     );
   }
 
+  /// Mark-Led nav femm — same Cormorant Soft italic face as Dawn Mist, quieter.
   static TextStyle wordmarkTextStyle({
     double size = wordmarkSize,
     Color color = ink,
   }) {
     return TextStyle(
-      fontFamily: fontFamily,
+      fontFamily: displayFontFamily,
       fontSize: size,
       fontWeight: wordmarkWeight,
+      fontStyle: wordmarkStyle,
       letterSpacing: letterSpacingEm(size, wordmarkTrackingEm),
       height: 1,
       color: color,
     );
   }
 
-  /// Login hero wordmark — Cormorant Soft (not Inter Air / not nav size).
+  /// Login hero wordmark — Cormorant Soft italic at majestic scale.
   static TextStyle majesticWordmarkTextStyle({
     double size = majesticWordmarkSize,
     Color color = ink,

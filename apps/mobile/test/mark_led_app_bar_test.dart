@@ -5,7 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('Mark-Led bar shows Calmness mark + quieter femm, no path label',
+  testWidgets(
+      'Mark-Led bar shows Calmness + Cormorant Soft italic femm, no path label',
       (tester) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -24,9 +25,10 @@ void main() {
     expect(find.byType(CalmnessMark), findsOneWidget);
     expect(find.text('femm'), findsOneWidget);
     final femm = tester.widget<Text>(find.text('femm'));
-    expect(femm.style?.fontFamily, PetalSoft.fontFamily);
+    expect(femm.style?.fontFamily, PetalSoft.displayFontFamily);
     expect(femm.style?.fontSize, PetalSoft.wordmarkSize);
     expect(femm.style?.fontWeight, PetalSoft.wordmarkWeight);
+    expect(femm.style?.fontStyle, PetalSoft.wordmarkStyle);
     expect(femm.style?.color, PetalSoft.ink);
     expect(
       femm.style?.letterSpacing,
@@ -35,6 +37,10 @@ void main() {
         PetalSoft.wordmarkTrackingEm,
       ),
     );
+    // Same face as Dawn Mist login (scale differs).
+    expect(femm.style?.fontFamily, PetalSoft.majesticWordmarkTextStyle().fontFamily);
+    expect(femm.style?.fontStyle, PetalSoft.majesticWordmarkStyle);
+    expect(femm.style?.fontWeight, PetalSoft.majesticWordmarkWeight);
     expect(find.text('Path A'), findsNothing);
     expect(find.text('PATH A'), findsNothing);
     expect(find.text('Welcome'), findsNothing);

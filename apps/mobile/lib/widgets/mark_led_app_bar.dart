@@ -3,9 +3,10 @@ import 'package:flutter/material.dart';
 import '../theme/petal_soft.dart';
 import 'calmness_mark.dart';
 
-/// Mark-Led Calmness top-nav — larger bloom, quieter femm wordmark.
+/// Mark-Led Calmness top-nav — larger bloom, quieter Cormorant Soft femm.
 ///
-/// Locked from Calmness nav mockups. No path labels in the bar.
+/// Locked from Calmness nav mockups. Wordmark reuses Dawn Mist Cormorant Soft
+/// italic (quieter nav scale). No path labels in the bar.
 class MarkLedAppBar extends StatelessWidget implements PreferredSizeWidget {
   const MarkLedAppBar({
     super.key,
@@ -143,7 +144,7 @@ class MarkLedTopBar extends StatelessWidget {
   }
 }
 
-/// 36px Calmness mark + quieter Inter Air femm wordmark.
+/// 36px Calmness mark + quieter Cormorant Soft italic femm (Dawn Mist face).
 class MarkLedLockup extends StatelessWidget {
   const MarkLedLockup({super.key});
 
