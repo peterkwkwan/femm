@@ -14,4 +14,8 @@ flutter run --dart-define-from-file=dart_defines.json
 # (copy dart_defines.example.json → dart_defines.json; gitignored)
 ```
 
-`GOOGLE_SERVER_CLIENT_ID` must be the Google Cloud **Web** OAuth client ID (same string as Supabase Auth → Google → Client IDs). Enable **Skip nonce check** on that provider. See [`docs/supabase-setup.md`](../../docs/supabase-setup.md) §2c–3e if you hit `Bad ID token`.
+`GOOGLE_SERVER_CLIENT_ID` must be the Google Cloud **Web** OAuth client ID (same string as Supabase Auth → Google → Client IDs) — currently:
+
+`497406004004-vucsq218h9lhhvep09ls25o9i13vq36i.apps.googleusercontent.com`
+
+Do **not** put the Android (`com.femm.femm_app`) client ID here. Enable **Skip nonce check** on the Supabase Google provider. See [`docs/supabase-setup.md`](../../docs/supabase-setup.md) §2c–3e if you hit `Bad ID token`.

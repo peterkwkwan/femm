@@ -166,18 +166,44 @@ Mobile dart-defines: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `GOOGLE_SERVER_CLIENT_
 
 ### 3e. Troubleshoot `AuthApiException … Bad ID token`
 
-Google account picker succeeded, then the login screen shows **Bad ID token** (HTTP 400). That means Supabase Auth received a token string but **OIDC verification failed** (malformed JWT, bad signature/`iss`, or expired). Closely related misconfigs show different messages (`Unacceptable audience…`, nonce errors).
+Google account picker succeeded, then the login screen shows **Bad ID token** (HTTP 400). That means Supabase Auth received a token string but **OIDC verification failed** (malformed JWT, bad signature/`iss`, expired, or `at_hash` mismatch). Closely related misconfigs show different messages (`Unacceptable audience…`, nonce errors).
+
+**Peter’s current Google Cloud Web client (use this exact string):**
+
+```text
+497406004004-vucsq218h9lhhvep09ls25o9i13vq36i.apps.googleusercontent.com
+```
+
+(`femm supabase` Web application; Android client `com.femm.femm_app` is separate and must **not** replace this value.)
+
+**Supabase project host seen in Google origins:** `puopkxhzijhzcaqpqqns.supabase.co`
 
 Check in order:
 
-1. **`GOOGLE_SERVER_CLIENT_ID` is the Web client ID** (`….apps.googleusercontent.com`), not the Android client ID and not the client secret. Rebuild after editing `dart_defines.json` (`flutter run --dart-define-from-file=dart_defines.json`).
-2. **Supabase Auth → Google → Client IDs** contains that **exact** Web client ID; **Client Secret** is the matching Web secret; provider is enabled.
-3. **Skip nonce check** is **ON**.
-4. Google Cloud has an **Android** OAuth client for `com.femm.femm_app` + **this machine’s** debug SHA-1 (Step 3b–3c). Wrong SHA-1 usually fails earlier (null ID token / Play Services errors), but keep it correct.
-5. Consent screen **Testing** → your Google account is a **test user**; Data Access includes **`openid`**.
-6. Supabase **Authentication → Logs**: look for the internal OIDC error behind `Bad ID token` (e.g. malformed JWT vs JWKS/verify failure).
+1. **`apps/mobile/dart_defines.json`** (gitignored) — `GOOGLE_SERVER_CLIENT_ID` must be **byte-for-byte** the Web client ID above (not the Android client, not the secret). Also set:
+   - `SUPABASE_URL=https://puopkxhzijhzcaqpqqns.supabase.co`
+   - `SUPABASE_ANON_KEY=` (Project Settings → API → anon `public`)
+2. Full restart after editing defines: stop the app, then  
+   `flutter run --dart-define-from-file=dart_defines.json`  
+   (hot reload does **not** pick up new dart-defines).
+3. **Supabase → Authentication → Providers → Google**
+   - Enabled
+   - **Client IDs** / Authorized Client IDs = the **same** Web client ID string
+   - **Client Secret** = secret for that Web client (eye icon in Google Cloud → Credentials → `femm supabase`)
+   - **Skip nonce check** = **ON** (required for `google_sign_in`)
+4. **Android OAuth client** `com.femm.femm_app`: SHA-1 must match the keystore that signed **this** install (debug keystore for `flutter run`). Print it:
+   ```bash
+   keytool -list -v \
+     -alias androiddebugkey \
+     -keystore ~/.android/debug.keystore \
+     -storepass android -keypass android | grep SHA1
+   ```
+   Paste that SHA-1 into the Android client (or create a second Android client if you use another machine/CI keystore).
+5. Consent **Testing** → Peter’s Google account is a **test user**; Data Access includes **`openid`**.
+6. Supabase **Authentication → Logs**: open the failed `token` / `id_token` row and read the internal OIDC error (malformed JWT vs signature vs JWKS).
+7. Optional smoke: portal Google OAuth at `http://localhost:5173` — if that works, Web client ID+secret in Supabase are fine and the remaining suspects are Skip nonce, dart-defines rebuild, or SHA-1.
 
-If the app instead says the ID token `aud` does not match `GOOGLE_SERVER_CLIENT_ID`, fix the dart-define / Client IDs mismatch before anything else.
+If the app instead says the ID token `aud` does not match `GOOGLE_SERVER_CLIENT_ID`, fix the dart-define (must be the Web ID above) before anything else. On Bad ID token the app also prints a `diag iss=… aud=…` line — compare `aud`/`expect` prefixes to the Web client ID.
 
 ---
 

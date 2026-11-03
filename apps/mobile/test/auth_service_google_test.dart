@@ -5,8 +5,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 String _fakeJwt(Map<String, dynamic> payload) {
-  String enc(Object value) =>
-      base64Url.encode(utf8.encode(value is String ? value : jsonEncode(value))).replaceAll('=', '');
+  String enc(Object value) => base64Url
+      .encode(utf8.encode(value is String ? value : jsonEncode(value)))
+      .replaceAll('=', '');
   return '${enc({"alg": "none", "typ": "JWT"})}.${enc(payload)}.sig';
 }
 
@@ -63,13 +64,50 @@ void main() {
     });
   });
 
+  group('googleIdTokenDiagnostics', () {
+    test('includes iss aud exp flags without full secrets', () {
+      final diag = googleIdTokenDiagnostics(
+        {
+          'iss': 'https://accounts.google.com',
+          'aud': '497406004004-vucsq218h9lhhvep09ls25o9i13vq36i.apps.googleusercontent.com',
+          'azp': 'android-client.apps.googleusercontent.com',
+          'exp': 1730000000,
+          'nonce': 'abc',
+          'at_hash': 'xyz',
+        },
+        expectedAudience:
+            '497406004004-vucsq218h9lhhvep09ls25o9i13vq36i.apps.googleusercontent.com',
+        supabaseHost: 'puopkxhzijhzcaqpqqns.supabase.co',
+      );
+      expect(diag, contains('iss=https://accounts.google.com'));
+      expect(diag, contains('nonce=true'));
+      expect(diag, contains('at_hash=true'));
+      expect(diag, contains('host=puopkxhzijhzcaqpqqns.supabase.co'));
+      expect(diag, isNot(contains('vucsq218h9lhhvep09ls25o9i13vq36i')));
+    });
+  });
+
   group('userFacingGoogleAuthMessage', () {
-    test('expands Bad ID token', () {
+    test('expands Bad ID token with femm Web client checklist', () {
       final message = userFacingGoogleAuthMessage(
         const AuthApiException('Bad ID token', statusCode: '400'),
+        claims: {
+          'iss': 'https://accounts.google.com',
+          'aud': '497406004004-vucsq218h9lhhvep09ls25o9i13vq36i.apps.googleusercontent.com',
+          'exp': 1730000000,
+        },
+        expectedAudience:
+            '497406004004-vucsq218h9lhhvep09ls25o9i13vq36i.apps.googleusercontent.com',
+        supabaseHost: 'puopkxhzijhzcaqpqqns.supabase.co',
       );
-      expect(message, contains('Skip nonce check is ON'));
-      expect(message, contains('GOOGLE_SERVER_CLIENT_ID'));
+      expect(message, contains('Skip nonce check ON'));
+      expect(
+        message,
+        contains(
+          '497406004004-vucsq218h9lhhvep09ls25o9i13vq36i.apps.googleusercontent.com',
+        ),
+      );
+      expect(message, contains('diag iss='));
     });
 
     test('expands unacceptable audience', () {

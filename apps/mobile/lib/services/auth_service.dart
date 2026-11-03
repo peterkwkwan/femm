@@ -6,7 +6,13 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/supabase_config.dart';
 
 /// Scopes Supabase Auth expects when exchanging a Google ID token.
-const List<String> kGoogleSignInScopes = <String>['email', 'profile'];
+///
+/// Include `openid` so Credential Manager / GIS mint a proper OIDC ID token.
+const List<String> kGoogleSignInScopes = <String>[
+  'openid',
+  'email',
+  'profile',
+];
 
 /// Google Auth via Supabase + `profiles` upsert for the femm user client.
 ///
@@ -63,13 +69,15 @@ class AuthService {
       );
     }
 
+    final expectedAudience = SupabaseConfig.googleServerClientId.trim();
     assertGoogleIdTokenAudience(
       idToken,
-      expectedAudience: SupabaseConfig.googleServerClientId.trim(),
+      expectedAudience: expectedAudience,
     );
+    final claims = decodeJwtPayload(idToken);
 
     // google_sign_in 7 splits authn from authz: ID token from authenticate(),
-    // access token from authorizationClient (required by signInWithIdToken).
+    // access token from authorizationClient.
     final GoogleSignInClientAuthorization authorization =
         await account.authorizationClient.authorizationForScopes(
               kGoogleSignInScopes,
@@ -79,18 +87,53 @@ class AuthService {
             );
 
     try {
-      final response = await _client.auth.signInWithIdToken(
-        provider: OAuthProvider.google,
+      final response = await _signInWithGoogleTokens(
         idToken: idToken,
         accessToken: authorization.accessToken,
+        claims: claims,
+        expectedAudience: expectedAudience,
       );
       await _upsertProfile(response.user ?? _client.auth.currentUser);
       return response;
     } on AuthException catch (error) {
       throw AuthException(
-        userFacingGoogleAuthMessage(error),
+        userFacingGoogleAuthMessage(
+          error,
+          claims: claims,
+          expectedAudience: expectedAudience,
+          supabaseHost: Uri.tryParse(SupabaseConfig.url)?.host,
+        ),
         statusCode: error.statusCode,
         code: error.code,
+      );
+    }
+  }
+
+  /// Prefer idToken+accessToken; if Supabase returns Bad ID token and the JWT
+  /// has `at_hash`, retry idToken-only (v7 authz token may not match at_hash).
+  Future<AuthResponse> _signInWithGoogleTokens({
+    required String idToken,
+    required String accessToken,
+    required Map<String, dynamic> claims,
+    required String expectedAudience,
+  }) async {
+    try {
+      return await _client.auth.signInWithIdToken(
+        provider: OAuthProvider.google,
+        idToken: idToken,
+        accessToken: accessToken,
+      );
+    } on AuthException catch (error) {
+      final hasAtHash = claims['at_hash'] != null;
+      final isBadIdToken = error.message.toLowerCase().contains('bad id token');
+      if (!isBadIdToken || !hasAtHash) {
+        rethrow;
+      }
+      // Separate authorizeScopes access tokens often do not match at_hash from
+      // the Credential Manager ID token; GoTrue then fails VerifyAccessToken.
+      return _client.auth.signInWithIdToken(
+        provider: OAuthProvider.google,
+        idToken: idToken,
       );
     }
   }
@@ -157,11 +200,7 @@ void assertGoogleIdTokenAudience(
   }
 
   final payload = decodeJwtPayload(idToken);
-  final aud = payload['aud'];
-  final audiences = <String>[
-    if (aud is String) aud,
-    if (aud is List) ...aud.whereType<String>(),
-  ];
+  final audiences = audienceFromClaims(payload);
 
   if (!audiences.contains(expectedAudience)) {
     throw StateError(
@@ -173,30 +212,91 @@ void assertGoogleIdTokenAudience(
   }
 }
 
+List<String> audienceFromClaims(Map<String, dynamic> claims) {
+  final aud = claims['aud'];
+  return <String>[
+    if (aud is String) aud,
+    if (aud is List) ...aud.whereType<String>(),
+  ];
+}
+
+/// Compact, non-secret JWT claim summary for on-device debugging.
+String googleIdTokenDiagnostics(
+  Map<String, dynamic> claims, {
+  String? expectedAudience,
+  String? supabaseHost,
+}) {
+  final aud = audienceFromClaims(claims).join(',');
+  final exp = claims['exp'];
+  String expLabel = '$exp';
+  if (exp is int) {
+    expLabel = DateTime.fromMillisecondsSinceEpoch(
+      exp * 1000,
+      isUtc: true,
+    ).toIso8601String();
+  }
+
+  String shorten(String? value) {
+    if (value == null || value.isEmpty) {
+      return '(empty)';
+    }
+    if (value.length <= 16) {
+      return value;
+    }
+    return '${value.substring(0, 8)}…${value.substring(value.length - 8)}';
+  }
+
+  return 'diag iss=${claims['iss']} aud=${shorten(aud)} '
+      'azp=${shorten(claims['azp']?.toString())} '
+      'exp=$expLabel nonce=${claims['nonce'] != null} '
+      'at_hash=${claims['at_hash'] != null} '
+      'expect=${shorten(expectedAudience)} '
+      'host=${supabaseHost ?? '?'}';
+}
+
 /// Maps opaque Supabase Google ID-token failures to an actionable message.
-String userFacingGoogleAuthMessage(AuthException error) {
+String userFacingGoogleAuthMessage(
+  AuthException error, {
+  Map<String, dynamic>? claims,
+  String? expectedAudience,
+  String? supabaseHost,
+}) {
   final message = error.message;
   final lower = message.toLowerCase();
+  final diag = claims == null
+      ? null
+      : googleIdTokenDiagnostics(
+          claims,
+          expectedAudience: expectedAudience,
+          supabaseHost: supabaseHost,
+        );
 
   if (lower.contains('bad id token')) {
     return 'Google ID token was rejected by Supabase (Bad ID token). '
-        'Confirm: (1) GOOGLE_SERVER_CLIENT_ID is the Web OAuth client ID, '
-        '(2) the same Web client ID + secret are in Supabase Auth → Google, '
-        '(3) Skip nonce check is ON, (4) Android OAuth client exists for '
-        'com.femm.femm_app + this device SHA-1. See docs/supabase-setup.md.';
+        'Confirm: (1) dart_defines GOOGLE_SERVER_CLIENT_ID is the Web client '
+        '497406004004-vucsq218h9lhhvep09ls25o9i13vq36i.apps.googleusercontent.com, '
+        '(2) same Web client ID + secret in Supabase Auth → Google → Client IDs, '
+        '(3) Skip nonce check ON, (4) Android OAuth client com.femm.femm_app '
+        'SHA-1 matches this install. '
+        '${diag ?? ''} '
+        'See docs/supabase-setup.md §3e.';
   }
 
   if (lower.contains('unacceptable audience')) {
     return 'Supabase rejected the Google ID token audience. Add the Web '
         'OAuth client ID to Supabase Auth → Google → Client IDs (same value '
-        'as GOOGLE_SERVER_CLIENT_ID). See docs/supabase-setup.md.';
+        'as GOOGLE_SERVER_CLIENT_ID). ${diag ?? ''} '
+        'See docs/supabase-setup.md.';
   }
 
   if (lower.contains('nonce')) {
     return 'Google ID token nonce check failed. Enable Skip nonce check under '
         'Supabase Auth → Providers → Google (required for google_sign_in). '
-        'See docs/supabase-setup.md.';
+        '${diag ?? ''} See docs/supabase-setup.md.';
   }
 
-  return message;
+  if (diag == null) {
+    return message;
+  }
+  return '$message $diag';
 }
