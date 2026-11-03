@@ -9,7 +9,7 @@ void main() {
     expect(PetalSoft.welcomeWeight, FontWeight.w500);
     expect(PetalSoft.welcomeSize, 28);
     expect(PetalSoft.wordmarkWeight, FontWeight.w600);
-    expect(PetalSoft.wordmarkSize, 16);
+    expect(PetalSoft.wordmarkSize, 20);
     expect(PetalSoft.wordmarkStyle, FontStyle.italic);
     expect(PetalSoft.majesticWordmarkSize, 44);
     expect(PetalSoft.majesticWordmarkWeight, FontWeight.w600);
@@ -36,12 +36,12 @@ void main() {
       () {
     final style = PetalSoft.wordmarkTextStyle();
     expect(style.fontFamily, 'Cormorant Garamond');
-    expect(style.fontSize, 16);
+    expect(style.fontSize, 20);
     expect(style.fontWeight, FontWeight.w600);
     expect(style.fontStyle, FontStyle.italic);
     expect(
       style.letterSpacing,
-      PetalSoft.letterSpacingEm(16, PetalSoft.wordmarkTrackingEm),
+      PetalSoft.letterSpacingEm(20, PetalSoft.wordmarkTrackingEm),
     );
   });
 

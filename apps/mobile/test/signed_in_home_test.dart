@@ -122,6 +122,7 @@ void main() {
     expect(find.text('femm'), findsOneWidget);
     final femm = tester.widget<Text>(find.text('femm'));
     expect(femm.style?.fontFamily, PetalSoft.displayFontFamily);
+    expect(femm.style?.fontSize, PetalSoft.wordmarkSize);
     expect(femm.style?.fontStyle, FontStyle.italic);
     expect(femm.style?.fontWeight, PetalSoft.wordmarkWeight);
     expect(find.text('Sign out'), findsOneWidget);

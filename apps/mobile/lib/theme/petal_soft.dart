@@ -30,7 +30,7 @@ abstract final class PetalSoft {
   static const double welcomeTrackingEm = -0.03;
 
   /// Cormorant Soft nav wordmark (femm): quieter scale of the login face.
-  static const double wordmarkSize = 16;
+  static const double wordmarkSize = 20;
   static const FontWeight wordmarkWeight = FontWeight.w600;
   static const double wordmarkTrackingEm = 0.06;
   static const FontStyle wordmarkStyle = FontStyle.italic;
