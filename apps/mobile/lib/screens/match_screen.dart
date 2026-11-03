@@ -12,10 +12,12 @@ import '../theme/petal_soft.dart';
 import '../widgets/mark_led_app_bar.dart';
 import '../widgets/path_a_step_header.dart';
 
-/// Unified Match · step 4 of 4 — Sheet stack (Petal Soft).
+/// Unified Match · step 4 of 4 — Done sheet extras (Petal Soft · Inter Air).
 ///
-/// Clinical reservation sheet + Book this appointment + optional extras.
-/// Hold countdown stays live. No separate gate CTA on this screen.
+/// Before clinical confirm: appointment details + Book this appointment;
+/// optional extras stay off-screen. After confirm: You're set (upward check
+/// tick), Share + Google Calendar on the clinic card, extras expand reveal,
+/// Back to home as primary pill.
 class MatchScreen extends StatefulWidget {
   const MatchScreen({
     super.key,
@@ -25,6 +27,19 @@ class MatchScreen extends StatefulWidget {
 
   final PathASession session;
   final MatchService? matchService;
+
+  static const String beforeHeadline = 'Your appointment details';
+  static const String beforeSupport = 'Confirm your clinical slot';
+  static const String afterHeadline = "You're set";
+  static const String afterSupport =
+      'Clinical booking saved. Share the slot, add it to Calendar, or open '
+      'optional extras below.';
+  static const String bookedStatusCaption = 'Appointment saved';
+  static const String extrasSectionLabel = 'OPTIONAL EXTRAS';
+  static const String backHomeLabel = 'Back to home';
+  static const String bookAppointmentLabel = 'Book this appointment';
+  static const String shareActionLabel = 'Share';
+  static const String calendarActionLabel = 'Add to Google Calendar';
 
   /// Demo doctor labels for seed clinics (not real practitioners).
   static String demoDoctorName(ClinicalSpecialty specialty) {
@@ -89,12 +104,30 @@ class MatchScreen extends StatefulWidget {
     return 'Clinical';
   }
 
+  /// Compact clinic line for the booked card (name · district).
+  static String bookedClinicLine(Clinic? clinic, ClinicalSpecialty specialty) {
+    if (clinic == null) return specialty.label;
+    return '${clinic.name} · ${clinic.district}';
+  }
+
+  /// Prototype share body (no PHI — demo doctor + clinic + slot only).
+  static String shareAppointmentText({
+    required ClinicalSpecialty specialty,
+    required Clinic? clinic,
+    required AppointmentSlot? slot,
+  }) {
+    final doctor = demoDoctorName(specialty);
+    final where = bookedClinicLine(clinic, specialty);
+    final when = formatSlotAmPm(slot);
+    return 'femm clinical appointment: $doctor · $where · $when';
+  }
+
   @override
   State<MatchScreen> createState() => _MatchScreenState();
 }
 
 class _MatchScreenState extends State<MatchScreen>
-    with WidgetsBindingObserver {
+    with WidgetsBindingObserver, SingleTickerProviderStateMixin {
   late final MatchService _match = widget.matchService ?? MatchService();
 
   PathAMatch? _matchRow;
@@ -106,18 +139,50 @@ class _MatchScreenState extends State<MatchScreen>
   bool _loading = true;
   bool _busyClinical = false;
   bool _releasingHold = false;
+
   /// Local flag so UI still offers re-hold after RPC cleared slot_id / expires_at.
   bool _holdExpiredLocal = false;
   bool _sheetExpanded = false;
+  bool _extrasExpanded = true;
+  bool _didPlayCheckTick = false;
   String? _busyPartnerId;
   String? _error;
   Duration _remaining = Duration.zero;
   Timer? _ticker;
 
+  late final AnimationController _checkTickController;
+  late final Animation<double> _checkTickY;
+  late final Animation<double> _checkTickScale;
+  late final Animation<double> _checkStroke;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _checkTickController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 620),
+    );
+    final curved = CurvedAnimation(
+      parent: _checkTickController,
+      curve: const Cubic(0.22, 1, 0.36, 1),
+    );
+    _checkTickY = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 14, end: -5), weight: 55),
+      TweenSequenceItem(tween: Tween(begin: -5, end: 2), weight: 23),
+      TweenSequenceItem(tween: Tween(begin: 2, end: 0), weight: 22),
+    ]).animate(curved);
+    _checkTickScale = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 0.86, end: 1.06), weight: 55),
+      TweenSequenceItem(tween: Tween(begin: 1.06, end: 0.98), weight: 23),
+      TweenSequenceItem(tween: Tween(begin: 0.98, end: 1), weight: 22),
+    ]).animate(curved);
+    _checkStroke = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(
+        parent: _checkTickController,
+        curve: const Interval(0.4, 1, curve: Curves.easeOut),
+      ),
+    );
     _bootstrap();
   }
 
@@ -125,7 +190,14 @@ class _MatchScreenState extends State<MatchScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _ticker?.cancel();
+    _checkTickController.dispose();
     super.dispose();
+  }
+
+  void _playCheckTickIfNeeded() {
+    if (_clinical == null || _didPlayCheckTick) return;
+    _didPlayCheckTick = true;
+    _checkTickController.forward(from: 0);
   }
 
   /// Leave-and-return: refresh hold / booking state when app resumes.
@@ -155,6 +227,7 @@ class _MatchScreenState extends State<MatchScreen>
         _error = null;
       });
       _syncCountdown();
+      _playCheckTickIfNeeded();
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = e.toString());
@@ -187,6 +260,7 @@ class _MatchScreenState extends State<MatchScreen>
         _error = null;
       });
       _syncCountdown();
+      _playCheckTickIfNeeded();
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -272,8 +346,10 @@ class _MatchScreenState extends State<MatchScreen>
         _clinical = booking;
         _busyClinical = false;
         _holdExpiredLocal = false;
+        _extrasExpanded = true;
       });
       _ticker?.cancel();
+      _playCheckTickIfNeeded();
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -342,15 +418,49 @@ class _MatchScreenState extends State<MatchScreen>
     });
   }
 
+  void _shareAppointmentStub() {
+    final match = _matchRow;
+    if (match == null) return;
+    final body = MatchScreen.shareAppointmentText(
+      specialty: match.specialty,
+      clinic: match.clinic,
+      slot: match.slot,
+    );
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Share (prototype stub): $body'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _addToGoogleCalendarStub() {
+    final match = _matchRow;
+    final when = MatchScreen.formatSlotAmPm(match?.slot);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Google Calendar (prototype stub) — would add: $when',
+        ),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _goHome() {
+    Navigator.of(context).popUntil((r) => r.isFirst);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final confirmed = _clinical != null;
     return Scaffold(
       backgroundColor: PetalSoft.bg,
       appBar: const MarkLedAppBar(),
       body: Column(
         children: [
-          const PathAStepHeader(step: PathAStep.match),
+          if (!confirmed) const PathAStepHeader(step: PathAStep.match),
           Expanded(
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
@@ -366,14 +476,50 @@ class _MatchScreenState extends State<MatchScreen>
                           ),
                           const SizedBox(height: 12),
                         ],
-                        _buildSheetStack(context),
-                        const SizedBox(height: 16),
-                        TextButton(
-                          onPressed: () {
-                            Navigator.of(context).popUntil((r) => r.isFirst);
-                          },
-                          child: const Text('Back to home'),
-                        ),
+                        if (!confirmed) ...[
+                          Text(
+                            MatchScreen.beforeHeadline,
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              fontFamily: PetalSoft.fontFamily,
+                              color: PetalSoft.ink,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 22,
+                              height: 1.2,
+                              letterSpacing: PetalSoft.letterSpacingEm(
+                                22,
+                                PetalSoft.welcomeTrackingEm,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            MatchScreen.beforeSupport,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: PetalSoft.muted,
+                              fontWeight: FontWeight.w400,
+                              fontSize: 13,
+                              height: 1.45,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          _buildPreConfirmSheet(context),
+                          const SizedBox(height: 16),
+                          TextButton(
+                            onPressed: _goHome,
+                            child: const Text(MatchScreen.backHomeLabel),
+                          ),
+                        ] else ...[
+                          _buildYoureSetHeader(context),
+                          const SizedBox(height: 4),
+                          _buildBookedClinicalCard(context),
+                          const SizedBox(height: 14),
+                          _buildExtrasReveal(context),
+                          const SizedBox(height: 18),
+                          FilledButton(
+                            onPressed: _goHome,
+                            child: const Text(MatchScreen.backHomeLabel),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -383,7 +529,81 @@ class _MatchScreenState extends State<MatchScreen>
     );
   }
 
-  Widget _buildSheetStack(BuildContext context) {
+  Widget _buildYoureSetHeader(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 10, 8, 18),
+      child: Column(
+        children: [
+          AnimatedBuilder(
+            animation: _checkTickController,
+            builder: (context, child) {
+              return Opacity(
+                opacity: _checkTickController.value.clamp(0.0, 1.0),
+                child: Transform.translate(
+                  offset: Offset(0, _checkTickY.value),
+                  child: Transform.scale(
+                    scale: _checkTickScale.value,
+                    child: child,
+                  ),
+                ),
+              );
+            },
+            child: Container(
+              width: 52,
+              height: 52,
+              decoration: const BoxDecoration(
+                color: PetalSoft.accentSoft,
+                shape: BoxShape.circle,
+              ),
+              alignment: Alignment.center,
+              child: AnimatedBuilder(
+                animation: _checkStroke,
+                builder: (context, _) {
+                  return CustomPaint(
+                    size: const Size(24, 24),
+                    painter: _UpwardCheckPainter(
+                      progress: _checkStroke.value,
+                      color: PetalSoft.accent,
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            MatchScreen.afterHeadline,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.headlineMedium?.copyWith(
+              fontFamily: PetalSoft.fontFamily,
+              color: PetalSoft.ink,
+              fontWeight: FontWeight.w500,
+              fontSize: 26,
+              height: 1.15,
+              letterSpacing: PetalSoft.letterSpacingEm(
+                26,
+                PetalSoft.welcomeTrackingEm,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            MatchScreen.afterSupport,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: PetalSoft.muted,
+              fontWeight: FontWeight.w400,
+              fontSize: 13,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPreConfirmSheet(BuildContext context) {
     final theme = Theme.of(context);
     final match = _matchRow;
     if (match == null) {
@@ -391,18 +611,16 @@ class _MatchScreenState extends State<MatchScreen>
     }
 
     final clinic = match.clinic;
-    final holdAlive = _clinical == null &&
-        !_holdExpiredLocal &&
+    final holdAlive = !_holdExpiredLocal &&
         match.hasActiveHold &&
         _remaining > Duration.zero;
-    final holdExpired = _clinical == null &&
-        !holdAlive &&
+    final holdExpired = !holdAlive &&
         (_holdExpiredLocal ||
             match.slotId != null ||
             match.holdExpiresAt != null);
 
     final holdLabel = MatchScreen.clinicalHeaderLabel(
-      booked: _clinical != null,
+      booked: false,
       holdAlive: holdAlive,
     );
     final countdownText =
@@ -482,15 +700,16 @@ class _MatchScreenState extends State<MatchScreen>
                       clinic?.name ?? match.specialty.label,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: PetalSoft.muted,
-                        fontSize: 11,
+                        fontSize: 12,
+                        height: 1.4,
                       ),
                     ),
                     if (clinic != null) ...[
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 2),
                       Text(
                         clinic.addressLine,
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          color: PetalSoft.ink.withValues(alpha: 0.85),
+                          color: PetalSoft.muted,
                           fontSize: 12,
                           height: 1.4,
                         ),
@@ -549,7 +768,7 @@ class _MatchScreenState extends State<MatchScreen>
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: PetalSoft.ink,
                         fontWeight: FontWeight.w600,
-                        fontSize: 12,
+                        fontSize: 13,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -580,42 +799,11 @@ class _MatchScreenState extends State<MatchScreen>
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
-            child: _buildClinicalActions(
+            padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+            child: _buildPreConfirmActions(
               context,
               holdAlive: holdAlive,
               holdExpired: holdExpired,
-            ),
-          ),
-          Container(
-            color: PetalSoft.bg,
-            padding: const EdgeInsets.fromLTRB(14, 10, 14, 4),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'OPTIONAL EXTRAS',
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: PetalSoft.muted,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.6,
-                    fontSize: 10,
-                  ),
-                ),
-                if (_partners.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    child: Text(
-                      'No routine categories selected.',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: PetalSoft.muted,
-                      ),
-                    ),
-                  )
-                else
-                  for (final partner in _partners)
-                    _buildUpsellRow(context, partner),
-              ],
             ),
           ),
         ],
@@ -623,25 +811,12 @@ class _MatchScreenState extends State<MatchScreen>
     );
   }
 
-  Widget _buildClinicalActions(
+  Widget _buildPreConfirmActions(
     BuildContext context, {
     required bool holdAlive,
     required bool holdExpired,
   }) {
     final theme = Theme.of(context);
-    if (_clinical != null) {
-      return Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: PetalSoft.accentSoft,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Text(
-          'Appointment booked.',
-          style: theme.textTheme.titleSmall,
-        ),
-      );
-    }
     if (holdAlive) {
       return FilledButton(
         onPressed: _busyClinical ? null : _confirmClinical,
@@ -654,7 +829,7 @@ class _MatchScreenState extends State<MatchScreen>
                   color: Colors.white,
                 ),
               )
-            : const Text('Book this appointment'),
+            : const Text(MatchScreen.bookAppointmentLabel),
       );
     }
     if (holdExpired) {
@@ -674,6 +849,215 @@ class _MatchScreenState extends State<MatchScreen>
       );
     }
     return const SizedBox.shrink();
+  }
+
+  Widget _buildBookedClinicalCard(BuildContext context) {
+    final theme = Theme.of(context);
+    final match = _matchRow;
+    if (match == null) {
+      return const SizedBox.shrink();
+    }
+    final clinic = match.clinic;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: PetalSoft.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: PetalSoft.accentSoft),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+            child: Row(
+              children: [
+                Text(
+                  MatchScreen.clinicalHeaderLabel(
+                    booked: true,
+                    holdAlive: false,
+                  ),
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: PetalSoft.accent,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 11,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  MatchScreen.bookedStatusCaption,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: PetalSoft.muted,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1, color: PetalSoft.accentSoft),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        MatchScreen.demoDoctorName(match.specialty),
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontFamily: PetalSoft.fontFamily,
+                          color: PetalSoft.ink,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 18,
+                          height: 1.25,
+                          letterSpacing: PetalSoft.letterSpacingEm(
+                            18,
+                            PetalSoft.welcomeTrackingEm,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        MatchScreen.bookedClinicLine(
+                          clinic,
+                          match.specialty,
+                        ),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: PetalSoft.muted,
+                          fontSize: 12,
+                          height: 1.4,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        MatchScreen.formatSlotAmPm(match.slot),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: PetalSoft.ink,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Row(
+                  children: [
+                    _DoneIconButton(
+                      tooltip: MatchScreen.shareActionLabel,
+                      onPressed: _shareAppointmentStub,
+                      child: Icon(
+                        Icons.ios_share,
+                        size: 18,
+                        color: PetalSoft.accent,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    _DoneIconButton(
+                      tooltip: MatchScreen.calendarActionLabel,
+                      onPressed: _addToGoogleCalendarStub,
+                      child: Icon(
+                        Icons.calendar_month_outlined,
+                        size: 18,
+                        color: PetalSoft.accent,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExtrasReveal(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        color: PetalSoft.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: PetalSoft.accentSoft),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () =>
+                  setState(() => _extrasExpanded = !_extrasExpanded),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        MatchScreen.extrasSectionLabel,
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: PetalSoft.muted,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.8,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ),
+                    AnimatedRotation(
+                      turns: _extrasExpanded ? 0.5 : 0,
+                      duration: const Duration(milliseconds: 180),
+                      child: const Icon(
+                        Icons.expand_more,
+                        size: 16,
+                        color: PetalSoft.muted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeInOut,
+            alignment: Alignment.topCenter,
+            child: _extrasExpanded
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const Divider(height: 1, color: PetalSoft.accentSoft),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
+                        child: _partners.isEmpty
+                            ? Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
+                                child: Text(
+                                  'No routine categories selected.',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: PetalSoft.muted,
+                                  ),
+                                ),
+                              )
+                            : Column(
+                                children: [
+                                  for (final partner in _partners)
+                                    _buildUpsellRow(context, partner),
+                                ],
+                              ),
+                      ),
+                    ],
+                  )
+                : const SizedBox(width: double.infinity),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildUpsellRow(BuildContext context, UpsellPartner partner) {
@@ -697,14 +1081,16 @@ class _MatchScreenState extends State<MatchScreen>
             partner.name,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: PetalSoft.ink,
-              fontWeight: FontWeight.w600,
-              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              fontSize: 14,
               height: 1.3,
+              letterSpacing: PetalSoft.letterSpacingEm(14, -0.01),
             ),
           ),
           const SizedBox(height: 2),
           Text(
-            '${partner.district} · fits ${bucket?.chipLabel.toLowerCase() ?? 'routine'}',
+            '${partner.district} · '
+            '${bucket?.chipLabel.toLowerCase() ?? 'routine'}',
             style: theme.textTheme.bodySmall?.copyWith(
               color: PetalSoft.muted,
               fontSize: 11,
@@ -738,11 +1124,12 @@ class _MatchScreenState extends State<MatchScreen>
                   style: FilledButton.styleFrom(
                     minimumSize: const Size(0, 32),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 5,
+                      horizontal: 14,
+                      vertical: 7,
                     ),
                     textStyle: const TextStyle(
-                      fontSize: 11,
+                      fontFamily: PetalSoft.fontFamily,
+                      fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -769,7 +1156,11 @@ class _MatchScreenState extends State<MatchScreen>
                   ),
                   child: const Text(
                     'Skip',
-                    style: TextStyle(fontSize: 11),
+                    style: TextStyle(
+                      fontFamily: PetalSoft.fontFamily,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                    ),
                   ),
                 ),
               ],
@@ -777,6 +1168,79 @@ class _MatchScreenState extends State<MatchScreen>
         ],
       ),
     );
+  }
+}
+
+class _DoneIconButton extends StatelessWidget {
+  const _DoneIconButton({
+    required this.tooltip,
+    required this.onPressed,
+    required this.child,
+  });
+
+  final String tooltip;
+  final VoidCallback onPressed;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: PetalSoft.bg,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(color: PetalSoft.accentSoft),
+        ),
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(12),
+          child: SizedBox(
+            width: 40,
+            height: 40,
+            child: Center(child: child),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Draws the upward check path with stroke reveal (canvas femmCheckStroke).
+class _UpwardCheckPainter extends CustomPainter {
+  _UpwardCheckPainter({
+    required this.progress,
+    required this.color,
+  });
+
+  final double progress;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = Path()
+      ..moveTo(size.width * 0.22, size.height * 0.52)
+      ..lineTo(size.width * 0.42, size.height * 0.72)
+      ..lineTo(size.width * 0.78, size.height * 0.30);
+
+    final metrics = path.computeMetrics().toList();
+    if (metrics.isEmpty) return;
+    final metric = metrics.first;
+    final extract = metric.extractPath(0, metric.length * progress.clamp(0, 1));
+
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.2
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    canvas.drawPath(extract, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _UpwardCheckPainter oldDelegate) {
+    return oldDelegate.progress != progress || oldDelegate.color != color;
   }
 }
 
