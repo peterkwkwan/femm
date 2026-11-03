@@ -15,6 +15,7 @@ class SignedInHome extends StatelessWidget {
     required this.busy,
     required this.error,
     required this.onSignOut,
+    this.clock = DateTime.now,
   });
 
   final User user;
@@ -22,8 +23,12 @@ class SignedInHome extends StatelessWidget {
   final String? error;
   final VoidCallback onSignOut;
 
+  /// Local wall clock; override in tests. Greeting uses [DateTime.toLocal].
+  final DateTime Function() clock;
+
+  /// Local-time greeting bands: morning before 12, afternoon before 17, else evening.
   static String greetingFor(DateTime now) {
-    final hour = now.hour;
+    final hour = now.toLocal().hour;
     if (hour < 12) return 'Good morning';
     if (hour < 17) return 'Good afternoon';
     return 'Good evening';
@@ -64,7 +69,7 @@ class SignedInHome extends StatelessWidget {
         ? displayName.trim()
         : (email ?? 'Signed in');
     final initial = initialOf(displayName: displayName, email: email);
-    final greeting = greetingFor(DateTime.now());
+    final greeting = greetingFor(clock().toLocal());
 
     return Scaffold(
       backgroundColor: PetalSoft.bg,

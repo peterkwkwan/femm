@@ -20,17 +20,29 @@ User _fakeUser({
 }
 
 void main() {
-  test('greeting and first-name helpers', () {
+  test('local-time greeting bands and first-name helpers', () {
     expect(
-      SignedInHome.greetingFor(DateTime(2026, 1, 1, 9)),
+      SignedInHome.greetingFor(DateTime(2026, 1, 1, 0)),
       'Good morning',
     );
     expect(
-      SignedInHome.greetingFor(DateTime(2026, 1, 1, 14)),
+      SignedInHome.greetingFor(DateTime(2026, 1, 1, 11)),
+      'Good morning',
+    );
+    expect(
+      SignedInHome.greetingFor(DateTime(2026, 1, 1, 12)),
       'Good afternoon',
     );
     expect(
-      SignedInHome.greetingFor(DateTime(2026, 1, 1, 20)),
+      SignedInHome.greetingFor(DateTime(2026, 1, 1, 16)),
+      'Good afternoon',
+    );
+    expect(
+      SignedInHome.greetingFor(DateTime(2026, 1, 1, 17)),
+      'Good evening',
+    );
+    expect(
+      SignedInHome.greetingFor(DateTime(2026, 1, 1, 23)),
       'Good evening',
     );
     expect(
@@ -49,12 +61,47 @@ void main() {
     );
   });
 
+  testWidgets('Next-step hero greeting follows injected local clock',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    Future<void> pumpAt(DateTime local) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: PetalSoft.theme(),
+          home: SignedInHome(
+            user: _fakeUser(),
+            busy: false,
+            error: null,
+            onSignOut: () {},
+            clock: () => local,
+          ),
+        ),
+      );
+      await tester.pump();
+    }
+
+    await pumpAt(DateTime(2026, 1, 1, 9));
+    expect(find.text('GOOD MORNING'), findsOneWidget);
+    expect(find.text('GOOD AFTERNOON'), findsNothing);
+
+    await pumpAt(DateTime(2026, 1, 1, 14));
+    expect(find.text('GOOD AFTERNOON'), findsOneWidget);
+    expect(find.text('GOOD MORNING'), findsNothing);
+
+    await pumpAt(DateTime(2026, 1, 1, 20));
+    expect(find.text('GOOD EVENING'), findsOneWidget);
+    expect(find.text('GOOD MORNING'), findsNothing);
+  });
+
   testWidgets('Next-step hero shows identity, Upload, Path A rail, disclaimer',
       (tester) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     var signedOut = false;
+    final now = DateTime(2026, 6, 1, 15); // afternoon local
     await tester.pumpWidget(
       MaterialApp(
         theme: PetalSoft.theme(),
@@ -63,6 +110,7 @@ void main() {
           busy: false,
           error: null,
           onSignOut: () => signedOut = true,
+          clock: () => now,
         ),
       ),
     );
@@ -70,6 +118,8 @@ void main() {
 
     expect(find.text('femm'), findsOneWidget);
     expect(find.text('Sign out'), findsOneWidget);
+    expect(find.text('GOOD AFTERNOON'), findsOneWidget);
+    expect(find.text('GOOD MORNING'), findsNothing);
     expect(find.text('Kool, start with your labs'), findsOneWidget);
     expect(find.text('Kool Krib'), findsOneWidget);
     expect(find.text('kribkool@gmail.com'), findsOneWidget);
