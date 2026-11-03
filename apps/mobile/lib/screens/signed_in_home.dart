@@ -100,7 +100,7 @@ class SignedInHome extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      '$first, start with your labs',
+                      '$first, start your journey to recover',
                       style: theme.textTheme.headlineSmall?.copyWith(
                         fontFamily: PetalSoft.fontFamily,
                         color: PetalSoft.ink,

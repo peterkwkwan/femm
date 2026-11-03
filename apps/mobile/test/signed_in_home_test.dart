@@ -124,7 +124,7 @@ void main() {
     expect(find.byType(MarkLedAvatar), findsOneWidget);
     expect(find.text('GOOD AFTERNOON'), findsOneWidget);
     expect(find.text('GOOD MORNING'), findsNothing);
-    expect(find.text('Kool, start with your labs'), findsOneWidget);
+    expect(find.text('Kool, start your journey to recover'), findsOneWidget);
     expect(find.text('Kool Krib'), findsOneWidget);
     expect(find.text('kribkool@gmail.com'), findsOneWidget);
     expect(find.text('YOUR NEXT STEP'), findsOneWidget);
