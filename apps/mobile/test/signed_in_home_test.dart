@@ -129,6 +129,14 @@ void main() {
     expect(find.text('kribkool@gmail.com'), findsOneWidget);
     expect(find.text('YOUR NEXT STEP'), findsOneWidget);
     expect(find.text('Upload a lab PDF'), findsOneWidget);
+    expect(
+      find.text(
+        'Tell us about your current journey and we will '
+        'find a physician that best suits your recovery '
+        'plan.',
+      ),
+      findsOneWidget,
+    );
     expect(find.text('Upload lab PDF'), findsOneWidget);
     expect(find.text('Path A · Labs 1 of 4'), findsOneWidget);
     // Path label must not appear in the top-nav — only in body rail copy.

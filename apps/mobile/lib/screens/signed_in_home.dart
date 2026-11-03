@@ -151,8 +151,9 @@ class SignedInHome extends StatelessWidget {
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            'Path A begins with labs, then routine, symptoms, '
-                            'and a calm match.',
+                            'Tell us about your current journey and we will '
+                            'find a physician that best suits your recovery '
+                            'plan.',
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: PetalSoft.muted,
                               fontSize: 13,
