@@ -67,6 +67,28 @@ class MatchScreen extends StatefulWidget {
     return '$day $month · $hour:$minute $period';
   }
 
+  /// `mm:ss` hold remaining (clamped at zero).
+  static String formatHoldCountdown(Duration remaining) {
+    final total = remaining.inSeconds < 0 ? 0 : remaining.inSeconds;
+    final m = (total ~/ 60).toString().padLeft(2, '0');
+    final s = (total % 60).toString().padLeft(2, '0');
+    return '$m:$s';
+  }
+
+  /// Right-side hold caption beside the live countdown.
+  static String holdCountdownCaption(Duration remaining) =>
+      'Current booking held for: ${formatHoldCountdown(remaining)}';
+
+  /// Sheet header left label for clinical hold / booked states.
+  static String clinicalHeaderLabel({
+    required bool booked,
+    required bool holdAlive,
+  }) {
+    if (booked) return 'Clinical · booked';
+    if (holdAlive) return 'Clinical booking';
+    return 'Clinical';
+  }
+
   @override
   State<MatchScreen> createState() => _MatchScreenState();
 }
@@ -228,13 +250,6 @@ class _MatchScreenState extends State<MatchScreen>
     }
   }
 
-  String _formatCountdown(Duration d) {
-    final total = d.inSeconds;
-    final m = (total ~/ 60).toString().padLeft(2, '0');
-    final s = (total % 60).toString().padLeft(2, '0');
-    return '$m:$s';
-  }
-
   Future<void> _confirmClinical() async {
     // Double-confirm: already booked → no-op success path.
     if (_clinical != null || _busyClinical) return;
@@ -386,12 +401,12 @@ class _MatchScreenState extends State<MatchScreen>
             match.slotId != null ||
             match.holdExpiresAt != null);
 
-    final holdLabel = _clinical != null
-        ? 'Clinical · booked'
-        : holdAlive
-            ? 'Clinical · held'
-            : 'Clinical';
-    final countdownText = holdAlive ? _formatCountdown(_remaining) : null;
+    final holdLabel = MatchScreen.clinicalHeaderLabel(
+      booked: _clinical != null,
+      holdAlive: holdAlive,
+    );
+    final countdownText =
+        holdAlive ? MatchScreen.formatHoldCountdown(_remaining) : null;
 
     return Container(
       decoration: BoxDecoration(
@@ -407,17 +422,24 @@ class _MatchScreenState extends State<MatchScreen>
             padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
             child: Row(
               children: [
-                Expanded(
-                  child: Text(
-                    holdLabel,
+                Text(
+                  holdLabel,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: PetalSoft.accent,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 11,
+                  ),
+                ),
+                const Spacer(),
+                if (countdownText != null) ...[
+                  Text(
+                    'Current booking held for: ',
                     style: theme.textTheme.labelLarge?.copyWith(
-                      color: PetalSoft.accent,
-                      fontWeight: FontWeight.w600,
+                      color: PetalSoft.ink,
+                      fontWeight: FontWeight.w500,
                       fontSize: 11,
                     ),
                   ),
-                ),
-                if (countdownText != null)
                   Text(
                     countdownText,
                     style: theme.textTheme.titleMedium?.copyWith(
@@ -427,6 +449,7 @@ class _MatchScreenState extends State<MatchScreen>
                       fontSize: 18,
                     ),
                   ),
+                ],
               ],
             ),
           ),

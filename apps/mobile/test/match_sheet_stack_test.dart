@@ -47,4 +47,32 @@ void main() {
     expect(MatchScreen.formatSlotAmPm(evening).toLowerCase(), contains('pm'));
     expect(MatchScreen.formatSlotAmPm(null), 'Slot unavailable');
   });
+
+  test('clinical header label uses Clinical booking while hold is alive', () {
+    expect(
+      MatchScreen.clinicalHeaderLabel(booked: false, holdAlive: true),
+      'Clinical booking',
+    );
+    expect(
+      MatchScreen.clinicalHeaderLabel(booked: true, holdAlive: false),
+      'Clinical · booked',
+    );
+    expect(
+      MatchScreen.clinicalHeaderLabel(booked: false, holdAlive: false),
+      'Clinical',
+    );
+  });
+
+  test('hold countdown caption prefixes live mm:ss', () {
+    expect(MatchScreen.formatHoldCountdown(const Duration(minutes: 14, seconds: 32)), '14:32');
+    expect(MatchScreen.formatHoldCountdown(Duration.zero), '00:00');
+    expect(
+      MatchScreen.holdCountdownCaption(const Duration(minutes: 9, seconds: 5)),
+      'Current booking held for: 09:05',
+    );
+    expect(
+      MatchScreen.holdCountdownCaption(const Duration(seconds: -3)),
+      'Current booking held for: 00:00',
+    );
+  });
 }
