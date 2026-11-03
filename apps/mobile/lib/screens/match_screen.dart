@@ -531,7 +531,7 @@ class _MatchScreenState extends State<MatchScreen>
                         Text(
                           _sheetExpanded
                               ? 'Hide Path A summary'
-                              : 'Tap for Path A summary',
+                              : 'Tap for summary',
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: PetalSoft.muted,
                             fontSize: 11,
