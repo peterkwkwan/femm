@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Privacy Policy — femm</title>
+  <meta name="description" content="Privacy Policy for the femm menopause care-navigation app (Hong Kong MVP)." />
+  <style>
+    :root {
+      --ink: #1c1917;
+      --muted: #57534e;
+      --line: #e7e5e4;
+      --bg: #fafaf9;
+      --paper: #ffffff;
+      --accent: #0f766e;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+      color: var(--ink);
+      background:
+        radial-gradient(1200px 500px at 10% -10%, #ecfdf5 0%, transparent 55%),
+        radial-gradient(900px 400px at 100% 0%, #f5f5f4 0%, transparent 50%),
+        var(--bg);
+      line-height: 1.65;
+    }
+    main {
+      max-width: 42rem;
+      margin: 0 auto;
+      padding: 2.5rem 1.25rem 4rem;
+    }
+    header {
+      margin-bottom: 2rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px solid var(--line);
+    }
+    .brand {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin: 0 0 0.35rem;
+    }
+    h1 {
+      font-size: 1.35rem;
+      font-weight: 600;
+      margin: 0 0 0.75rem;
+    }
+    .meta {
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin: 0;
+    }
+    .meta a { color: var(--accent); }
+    h2 {
+      font-size: 1.15rem;
+      margin: 2rem 0 0.65rem;
+      letter-spacing: -0.01em;
+    }
+    h3 {
+      font-size: 1.02rem;
+      margin: 1.25rem 0 0.4rem;
+    }
+    p, li { font-size: 1rem; }
+    ul { padding-left: 1.2rem; }
+    li { margin: 0.35rem 0; }
+    a { color: var(--accent); }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.95rem;
+      margin: 0.75rem 0 1rem;
+      background: var(--paper);
+    }
+    th, td {
+      border: 1px solid var(--line);
+      padding: 0.55rem 0.65rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: #f5f5f4; font-weight: 600; }
+    .note {
+      margin-top: 2.5rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <p class="brand">femm</p>
+      <h1>Privacy Policy</h1>
+      <p class="meta">
+        Effective date: 3 November 2026<br />
+        App: femm (<code>com.femm.femm_app</code>)<br />
+        Operator: Peter Kwan<br />
+        Contact: <a href="mailto:peterkwkwan@gmail.com">peterkwkwan@gmail.com</a>
+      </p>
+    </header>
+
+    <p>
+      This Privacy Policy describes how <strong>femm</strong> (“we”, “us”) collects, uses, stores, and shares
+      information when you use the femm mobile app and related practitioner portal (the “Service”).
+    </p>
+    <p>
+      femm is an early <strong>MVP / prototype</strong> care-navigation product for menopause-related journeys in
+      <strong>Hong Kong</strong>. It helps you upload lab PDFs, answer spend and symptom questions, see a
+      rule-based clinical match and optional upsell suggestions, and (if you confirm a booking) share a
+      pre-visit summary with a booked practitioner. <strong>It is not a medical device, not a diagnosis, and not medical advice.</strong>
+    </p>
+
+    <h2>1. Who this policy covers</h2>
+    <ul>
+      <li>Users of the Android app who sign in with Google, upload labs, and complete Path A intake.</li>
+      <li>Practitioners who sign in to the web portal with Google to view booking summaries for appointments linked to their clinic.</li>
+    </ul>
+    <p>
+      The Service is intended for adults. It is <strong>not directed at children under 13</strong>, and we do not
+      knowingly collect personal data from children.
+    </p>
+
+    <h2>2. Information we collect</h2>
+
+    <h3>2.1 Account and authentication (Google Sign-In + Supabase Auth)</h3>
+    <p>We use <strong>Google Sign-In</strong> and <strong>Supabase Auth</strong>. When you sign in, we may receive and store:</p>
+    <ul>
+      <li>Google account email address</li>
+      <li>Display name (if provided by Google)</li>
+      <li>A unique user identifier issued by our auth provider</li>
+      <li>Authentication tokens / session data needed to keep you signed in</li>
+      <li>Role in our system (<code>user</code> or <code>practitioner</code>) and, for practitioners, a linked clinic id when applicable</li>
+    </ul>
+    <p>We do <strong>not</strong> receive or store your Google password.</p>
+
+    <h3>2.2 Lab PDFs and extracted lab data (health-related)</h3>
+    <p>If you upload a lab PDF, we store:</p>
+    <ul>
+      <li>The <strong>original PDF file</strong> in a <strong>private</strong> Supabase Storage bucket (<code>lab-pdfs</code>), under a path scoped to your user id</li>
+      <li>Metadata such as original filename, upload status, and timestamps</li>
+      <li><strong>Biomarker rows</strong> extracted by our server-side function (name, value, unit, reference range, H/L flag when present), which you can confirm or edit in the app</li>
+    </ul>
+    <p>
+      Lab PDFs and biomarker data are <strong>sensitive health-related information</strong>. We process them only to
+      provide the care-navigation features you request (confirm labs, matching, booking summary).
+    </p>
+
+    <h3>2.3 Intake answers (spend and symptoms)</h3>
+    <p>We store your Path A session data, including:</p>
+    <ul>
+      <li>Selected spend categories (for example skincare/aesthetics, gym/physio, supplements, wellness/spa, mental health, private GP)</li>
+      <li>Selected menopause-related symptom chips</li>
+      <li>Completion timestamps for those steps</li>
+    </ul>
+
+    <h3>2.4 Matching, holds, and bookings</h3>
+    <p>
+      We store rule-based match results, hold/booking records (clinical and/or upsell), slot times,
+      partner/clinic references, and confirmation state needed to run the MVP demo flow.
+    </p>
+
+    <h3>2.5 Practitioner summary packs (Path C)</h3>
+    <p>
+      If you confirm a booking, we generate a summary pack that may include goals/symptoms snapshot, spend buckets,
+      match reason, flagged labs, lab details, patient email/display name, slot time, and a pointer to the original
+      lab PDF. That pack is readable by <strong>you</strong> and by the <strong>booked practitioner</strong> for that clinic appointment.
+    </p>
+
+    <h3>2.6 Technical and operational data</h3>
+    <p>
+      Our backend (Supabase) and Google’s sign-in services may process standard technical data such as IP address,
+      device/app identifiers, request logs, and security/auth events as part of hosting and authentication.
+      We do <strong>not</strong> currently integrate a separate third-party analytics, advertising, or crash-reporting SDK
+      in the MVP beyond what Google Sign-In / Google Play services and Supabase provide as part of their platforms.
+    </p>
+
+    <h2>3. How we use information</h2>
+    <p>We use the information above to:</p>
+    <ul>
+      <li>Authenticate you and maintain your session</li>
+      <li>Store and extract lab PDFs so you can confirm biomarker rows</li>
+      <li>Run rule-based care-navigation matching and optional same-bucket upsell suggestions</li>
+      <li>Hold and confirm fictional/demo clinic or partner slots in the MVP</li>
+      <li>Generate practitioner pre-visit summaries when you confirm a booking</li>
+      <li>Operate, secure, and debug the Service</li>
+      <li>Respond to support or deletion requests</li>
+    </ul>
+    <p>
+      We do <strong>not</strong> sell your personal information. We do <strong>not</strong> use lab PDFs or biomarker data for advertising.
+    </p>
+
+    <h2>4. Where data is stored and who processes it</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Role</th>
+          <th>Provider</th>
+          <th>Purpose</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>App backend (Auth, Postgres, private file storage, Edge Functions for PDF text extract)</td>
+          <td><strong>Supabase</strong></td>
+          <td>Host account, profile, intake, booking, and lab data; run extract function</td>
+        </tr>
+        <tr>
+          <td>Sign-in</td>
+          <td><strong>Google</strong> (Google Sign-In / OAuth)</td>
+          <td>Authenticate users and practitioners</td>
+        </tr>
+        <tr>
+          <td>App distribution (Android)</td>
+          <td><strong>Google Play</strong></td>
+          <td>Distribute the app; subject to Google’s terms when you install from Play</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      Data is processed on infrastructure operated by these providers (Supabase project region is typically chosen
+      near Hong Kong users, e.g. Southeast Asia / Singapore, when configured that way). Their own privacy policies
+      also apply to processing they perform as platforms.
+    </p>
+
+    <h2>5. How we share information</h2>
+    <p>We share information only as needed to run the Service:</p>
+    <ul>
+      <li>With Supabase and Google as processors/platforms described above</li>
+      <li>With a booked practitioner (via the authenticated portal): summary pack contents and access to the original lab PDF for that booking</li>
+      <li>If required by law or to protect rights, safety, or security</li>
+      <li>With your direction (for example if you ask us to export or delete data)</li>
+    </ul>
+    <p>
+      We do not sell personal data to data brokers. MVP clinic/partner supply may be fictional demo data; sharing
+      with a practitioner still only happens for bookings tied to your account.
+    </p>
+
+    <h2>6. Access control and retention</h2>
+    <ul>
+      <li>Lab PDF storage is configured as a <strong>private</strong> bucket with path-based access tied to your user id; practitioners receive booking-scoped access for confirmed Path C packs, not a public link dump.</li>
+      <li>Database tables use row-level security so ordinary users read/write their own rows; practitioners can read packs/bookings for their linked clinic when authorized.</li>
+      <li>We retain account, lab, intake, and booking data for as long as needed to operate the MVP and support your use, unless you ask us to delete it sooner or we delete prototype data as part of resetting demo environments.</li>
+      <li>Auth sessions expire according to Supabase Auth / token lifetime settings.</li>
+    </ul>
+
+    <h2>7. Your choices and rights</h2>
+    <p>
+      Depending on applicable law (including Hong Kong PDPO expectations for personal data), you may request to
+      access, correct, or delete personal data we hold about you, or withdraw from further use by signing out and
+      requesting deletion.
+    </p>
+    <p>
+      <strong>How to request:</strong> email
+      <a href="mailto:peterkwkwan@gmail.com">peterkwkwan@gmail.com</a>
+      from the Google account email you use in femm, and tell us what you need (access, correction, or deletion).
+      We will respond within a reasonable time for an MVP operated by a small team.
+    </p>
+    <p>
+      You can also revoke Google access to femm in your Google Account permissions settings; that stops new Google
+      sign-in until you grant access again, but does not by itself erase data already stored in our Supabase
+      project—email us for deletion.
+    </p>
+
+    <h2>8. Security</h2>
+    <p>
+      We use industry-standard platform controls (HTTPS, authenticated APIs, private object storage, database
+      row-level security). No method of transmission or storage is 100% secure. The MVP is a prototype: treat
+      uploaded real lab PDFs as sensitive and only use accounts you control.
+    </p>
+
+    <h2>9. International users</h2>
+    <p>
+      The Service is built for a <strong>Hong Kong</strong> prototype audience. If you access it from elsewhere,
+      your information may be processed in regions where our providers operate (for example Southeast Asia and
+      other regions used by Supabase/Google).
+    </p>
+
+    <h2>10. Changes</h2>
+    <p>
+      We may update this policy as the product changes. The “Effective date” at the top will change when we publish
+      material updates. Continued use after an update means you accept the revised policy for subsequent use.
+      For Google Play, the privacy policy URL will point at the current public version.
+    </p>
+
+    <h2>11. Contact</h2>
+    <p>
+      <strong>Peter Kwan</strong> — femm<br />
+      Email: <a href="mailto:peterkwkwan@gmail.com">peterkwkwan@gmail.com</a>
+    </p>
+
+    <p class="note">
+      This page describes current MVP practices honestly. It is not legal advice. Consider counsel review before a
+      broad public launch beyond internal/closed testing.
+      Markdown source in the repo: <code>docs/privacy-policy.md</code>.
+    </p>
+  </main>
+</body>
+</html>
