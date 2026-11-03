@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 
 import '../theme/petal_soft.dart';
+import 'calmness_mark.dart';
 import 'deep_accent_dusk_hills.dart';
 import 'google_g_mark.dart';
-import 'mark_led_app_bar.dart';
 
 const String kWelcomeHelperCopy =
     'After your health check or labs, we route you toward recovery care that fits.';
 
-/// Deep Accent Dusk login — animated flat hills, ink wordmark, Google CTA.
+/// Deep Accent Dusk login — Stacked Corner brand over hills, Welcome + Google CTA.
+///
+/// No app bar / navbar. Calmness mark stacked above bold lowercase femm,
+/// top-left over the dusk sky (Stacked Corner from login brand mockups).
 class DeepAccentDuskWelcome extends StatelessWidget {
   const DeepAccentDuskWelcome({
     super.key,
@@ -22,6 +25,12 @@ class DeepAccentDuskWelcome extends StatelessWidget {
   final String? error;
   final bool usingPlaceholders;
   final VoidCallback onGoogleSignIn;
+
+  /// Slightly above the Stacked Corner mockup baseline (42).
+  static const double stackedMarkSize = 48;
+
+  /// Larger + bold vs mockup wordSize 17 / weight 500.
+  static const double stackedWordSize = 22;
 
   @override
   Widget build(BuildContext context) {
@@ -45,10 +54,12 @@ class DeepAccentDuskWelcome extends StatelessWidget {
             child: const DeepAccentDuskHills(),
           ),
           Positioned(
-            top: topInset,
-            left: 0,
-            right: 0,
-            child: const MarkLedTopBar(),
+            top: topInset + 12,
+            left: 22,
+            child: const _StackedCornerBrand(
+              markSize: stackedMarkSize,
+              wordSize: stackedWordSize,
+            ),
           ),
           Positioned(
             left: 24,
@@ -145,6 +156,40 @@ class DeepAccentDuskWelcome extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Calmness bloom stacked above lowercase femm — not a bar lockup.
+class _StackedCornerBrand extends StatelessWidget {
+  const _StackedCornerBrand({
+    required this.markSize,
+    required this.wordSize,
+  });
+
+  final double markSize;
+  final double wordSize;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        CalmnessMark(size: markSize),
+        const SizedBox(height: 6),
+        Text(
+          'femm',
+          style: TextStyle(
+            fontFamily: PetalSoft.displayFontFamily,
+            fontSize: wordSize,
+            fontWeight: FontWeight.w700,
+            color: PetalSoft.ink,
+            height: 1,
+            letterSpacing: wordSize * 0.08,
+          ),
+        ),
+      ],
     );
   }
 }

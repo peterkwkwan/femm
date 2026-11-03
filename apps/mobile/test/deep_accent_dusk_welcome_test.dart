@@ -7,7 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('Deep Accent Dusk shows Mark-Led Calmness nav, hills, Google CTA',
+  testWidgets(
+      'Deep Accent Dusk Stacked Corner: no nav bar, stacked brand, hills, CTA',
       (tester) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -26,13 +27,20 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.byType(MarkLedTopBar), findsOneWidget);
+    expect(find.byType(MarkLedTopBar), findsNothing);
+    expect(find.byType(MarkLedAppBar), findsNothing);
+    expect(find.byType(AppBar), findsNothing);
+
     expect(find.byType(CalmnessMark), findsOneWidget);
+    final mark = tester.widget<CalmnessMark>(find.byType(CalmnessMark));
+    expect(mark.size, DeepAccentDuskWelcome.stackedMarkSize);
+    expect(mark.size, greaterThan(42));
+
     expect(find.text('femm'), findsOneWidget);
     final femm = tester.widget<Text>(find.text('femm'));
-    expect(femm.style?.color, const Color(0xFF2A1F1C));
-    expect(femm.style?.fontSize, 16);
-    expect(find.text('Path A'), findsNothing);
+    expect(femm.style?.color, PetalSoft.ink);
+    expect(femm.style?.fontSize, DeepAccentDuskWelcome.stackedWordSize);
+    expect(femm.style?.fontWeight, FontWeight.w700);
 
     expect(find.text('Welcome'), findsOneWidget);
     expect(find.text(kWelcomeHelperCopy), findsOneWidget);
