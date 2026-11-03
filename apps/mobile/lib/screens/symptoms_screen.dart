@@ -87,7 +87,7 @@ class _SymptomsScreenState extends State<SymptomsScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const PathAStepHeader(step: 2, label: 'Symptoms'),
+          const PathAStepHeader(step: PathAStep.symptoms),
           Expanded(
             child: ListView(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),

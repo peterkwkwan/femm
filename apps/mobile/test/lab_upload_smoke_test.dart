@@ -17,6 +17,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('LABS · STEP 1 OF 4'), findsOneWidget);
+    expect(find.text('Step 1 · Labs'), findsOneWidget);
     expect(find.text('Your health-check labs'), findsOneWidget);
     expect(find.text('Upload PDF'), findsOneWidget);
     expect(find.text('Take a photo'), findsOneWidget);

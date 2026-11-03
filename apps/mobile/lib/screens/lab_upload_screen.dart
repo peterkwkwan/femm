@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 
 import '../services/lab_service.dart';
 import '../theme/petal_soft.dart';
+import '../widgets/path_a_step_header.dart';
 import 'lab_confirm_screen.dart';
 
 /// Path A Labs step — stacked Upload PDF / Take a photo action cards.
@@ -130,40 +131,16 @@ class _LabUploadScreenState extends State<LabUploadScreen> {
         ],
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 22),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'LABS · STEP 1 OF 4',
-                style: theme.textTheme.labelLarge?.copyWith(
-                  letterSpacing: 1.1,
-                  fontWeight: FontWeight.w600,
-                  color: PetalSoft.accent,
-                  fontSize: 11,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  for (var i = 1; i <= 4; i++) ...[
-                    if (i > 1) const SizedBox(width: 6),
-                    Expanded(
-                      child: Container(
-                        height: 4,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(2),
-                          color: i == 1
-                              ? PetalSoft.accent
-                              : PetalSoft.ink.withValues(alpha: 0.12),
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-              const SizedBox(height: 18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const PathAStepHeader(step: PathAStep.labs),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 22),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
               Text(
                 'Your health-check labs',
                 style: theme.textTheme.headlineSmall?.copyWith(
@@ -238,8 +215,11 @@ class _LabUploadScreenState extends State<LabUploadScreen> {
                   height: 1.45,
                 ),
               ),
-            ],
-          ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

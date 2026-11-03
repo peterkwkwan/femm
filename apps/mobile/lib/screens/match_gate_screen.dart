@@ -103,7 +103,7 @@ class _MatchGateScreenState extends State<MatchGateScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const PathAStepHeader(step: 3, label: 'Match'),
+          const PathAStepHeader(step: PathAStep.match),
           Expanded(
             child: SafeArea(
               top: false,

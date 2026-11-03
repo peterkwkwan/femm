@@ -301,7 +301,7 @@ class _MatchScreenState extends State<MatchScreen>
       appBar: AppBar(title: const Text('femm')),
       body: Column(
         children: [
-          const PathAStepHeader(step: 3, label: 'Match'),
+          const PathAStepHeader(step: PathAStep.match),
           Expanded(
             child: _loading
                 ? const Center(child: CircularProgressIndicator())

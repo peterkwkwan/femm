@@ -4,6 +4,7 @@ import '../models/lab_biomarker.dart';
 import '../services/intake_service.dart';
 import '../services/lab_service.dart';
 import '../theme/petal_soft.dart';
+import '../widgets/path_a_step_header.dart';
 import 'spend_screen.dart';
 
 /// Editable biomarker list after extract. Flags shown only when present.
@@ -139,13 +140,14 @@ class _LabConfirmScreenState extends State<LabConfirmScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          const PathAStepHeader(step: PathAStep.labs),
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  'Your health-check labs',
+                  'Confirm biomarkers',
                   style: theme.textTheme.headlineSmall,
                 ),
                 const SizedBox(height: 8),

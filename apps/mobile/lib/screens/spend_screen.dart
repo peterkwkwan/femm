@@ -87,7 +87,7 @@ class _SpendScreenState extends State<SpendScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const PathAStepHeader(step: 1, label: 'Routine'),
+          const PathAStepHeader(step: PathAStep.routine),
           Expanded(
             child: ListView(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
