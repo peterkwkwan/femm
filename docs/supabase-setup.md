@@ -166,7 +166,9 @@ Mobile dart-defines: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `GOOGLE_SERVER_CLIENT_
 
 ### 3e. Troubleshoot `AuthApiException … Bad ID token`
 
-Google account picker succeeded, then the login screen shows **Bad ID token** (HTTP 400). That means Supabase Auth received a token string but **OIDC verification failed** (malformed JWT, bad signature/`iss`, expired, or `at_hash` mismatch). Closely related misconfigs show different messages (`Unacceptable audience…`, nonce errors).
+Google account picker succeeded, then the login screen shows **Bad ID token** (HTTP 400). That means Supabase Auth received a token string but **OIDC verification failed** (malformed JWT, bad signature/`iss`, **expired**, or `at_hash` mismatch). Closely related misconfigs show different messages (`Unacceptable audience…`, nonce errors).
+
+**Confirmed on femm (2026-11-03):** app `diag` showed `exp=2026-11-03T08:51:08.000Z` while Supabase `POST /auth/v1/token?grant_type=id_token` was at `13:26:40Z` (~**4.5 hours after expiry**). Aud/Web client/Skip nonce/`at_hash=false` were fine — Supabase correctly rejected an **expired** Google ID token (often a cached Credential Manager token and/or wrong device clock).
 
 **Peter’s current Google Cloud Web client (use this exact string):**
 
@@ -180,30 +182,19 @@ Google account picker succeeded, then the login screen shows **Bad ID token** (H
 
 Check in order:
 
-1. **`apps/mobile/dart_defines.json`** (gitignored) — `GOOGLE_SERVER_CLIENT_ID` must be **byte-for-byte** the Web client ID above (not the Android client, not the secret). Also set:
+1. **Phone date & time (do this first if `diag` shows `expired=true` or `exp` hours before the Auth log timestamp):**  
+   Settings → **Date & time** → enable **Automatic date & time** and **Automatic time zone**. Force-stop `femm`, then sign in again. Wrong clock + cached Google credentials produce exactly this failure.
+2. **`apps/mobile/dart_defines.json`** (gitignored) — `GOOGLE_SERVER_CLIENT_ID` must be **byte-for-byte** the Web client ID above (not the Android client, not the secret). Also set:
    - `SUPABASE_URL=https://puopkxhzijhzcaqpqqns.supabase.co`
    - `SUPABASE_ANON_KEY=` (Project Settings → API → anon `public`)
-2. Full restart after editing defines: stop the app, then  
+3. Full restart after editing defines: stop the app, then  
    `flutter run --dart-define-from-file=dart_defines.json`  
    (hot reload does **not** pick up new dart-defines).
-3. **Supabase → Authentication → Providers → Google**
-   - Enabled
-   - **Client IDs** / Authorized Client IDs = the **same** Web client ID string
-   - **Client Secret** = secret for that Web client (eye icon in Google Cloud → Credentials → `femm supabase`)
-   - **Skip nonce check** = **ON** (required for `google_sign_in`)
-4. **Android OAuth client** `com.femm.femm_app`: SHA-1 must match the keystore that signed **this** install (debug keystore for `flutter run`). Print it:
-   ```bash
-   keytool -list -v \
-     -alias androiddebugkey \
-     -keystore ~/.android/debug.keystore \
-     -storepass android -keypass android | grep SHA1
-   ```
-   Paste that SHA-1 into the Android client (or create a second Android client if you use another machine/CI keystore).
-5. Consent **Testing** → Peter’s Google account is a **test user**; Data Access includes **`openid`**.
-6. Supabase **Authentication → Logs**: open the failed `token` / `id_token` row and read the internal OIDC error (malformed JWT vs signature vs JWKS).
-7. Optional smoke: portal Google OAuth at `http://localhost:5173` — if that works, Web client ID+secret in Supabase are fine and the remaining suspects are Skip nonce, dart-defines rebuild, or SHA-1.
+4. **Supabase → Authentication → Providers → Google** (already verified for femm): Enabled; Client IDs = Web client; secret set; **Skip nonce check ON**.
+5. **Android OAuth client** `com.femm.femm_app` + debug SHA-1 (wrong SHA-1 usually fails earlier at Google, not as expired JWT).
+6. Consent **Testing** → test user; Data Access includes **`openid`**.
 
-If the app instead says the ID token `aud` does not match `GOOGLE_SERVER_CLIENT_ID`, fix the dart-define (must be the Web ID above) before anything else. On Bad ID token the app also prints a `diag iss=… aud=…` line — compare `aud`/`expect` prefixes to the Web client ID.
+On Bad ID token the app prints `diag iss=… aud=… exp=… expired=…`. If `expired=true`, fix device time / clear Google cache (app now signs out of Google before authenticate). Dashboard Client IDs were not the bug once aud matched.
 
 ---
 

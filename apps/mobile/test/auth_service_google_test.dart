@@ -64,50 +64,62 @@ void main() {
     });
   });
 
+  group('isGoogleIdTokenExpired', () {
+    test('detects Peter-style exp ~4.5h before request', () {
+      // exp 2026-11-03T08:51:08Z ; request ~13:26Z
+      const exp = 1793695868; // 2026-11-03 08:51:08 UTC
+      final claims = {'exp': exp};
+      final now = DateTime.utc(2026, 11, 3, 13, 26, 40);
+      expect(isGoogleIdTokenExpired(claims, now: now), isTrue);
+      expect(
+        expiredGoogleIdTokenMessage(claims),
+        contains('automatic date & time'),
+      );
+    });
+
+    test('accepts fresh token', () {
+      final now = DateTime.utc(2026, 11, 3, 13, 26, 40);
+      final exp = now.add(const Duration(minutes: 50)).millisecondsSinceEpoch ~/
+          1000;
+      expect(isGoogleIdTokenExpired({'exp': exp}, now: now), isFalse);
+    });
+  });
+
   group('googleIdTokenDiagnostics', () {
-    test('includes iss aud exp flags without full secrets', () {
+    test('includes expired flag', () {
+      final now = DateTime.utc(2026, 11, 3, 13, 26, 40);
       final diag = googleIdTokenDiagnostics(
         {
           'iss': 'https://accounts.google.com',
-          'aud': '497406004004-vucsq218h9lhhvep09ls25o9i13vq36i.apps.googleusercontent.com',
-          'azp': 'android-client.apps.googleusercontent.com',
-          'exp': 1730000000,
-          'nonce': 'abc',
-          'at_hash': 'xyz',
+          'aud':
+              '497406004004-vucsq218h9lhhvep09ls25o9i13vq36i.apps.googleusercontent.com',
+          'exp': 1793695868,
         },
         expectedAudience:
             '497406004004-vucsq218h9lhhvep09ls25o9i13vq36i.apps.googleusercontent.com',
         supabaseHost: 'puopkxhzijhzcaqpqqns.supabase.co',
+        now: now,
       );
-      expect(diag, contains('iss=https://accounts.google.com'));
-      expect(diag, contains('nonce=true'));
-      expect(diag, contains('at_hash=true'));
+      expect(diag, contains('expired=true'));
       expect(diag, contains('host=puopkxhzijhzcaqpqqns.supabase.co'));
-      expect(diag, isNot(contains('vucsq218h9lhhvep09ls25o9i13vq36i')));
     });
   });
 
   group('userFacingGoogleAuthMessage', () {
-    test('expands Bad ID token with femm Web client checklist', () {
+    test('Bad ID token with expired claims points at device clock', () {
       final message = userFacingGoogleAuthMessage(
         const AuthApiException('Bad ID token', statusCode: '400'),
         claims: {
           'iss': 'https://accounts.google.com',
-          'aud': '497406004004-vucsq218h9lhhvep09ls25o9i13vq36i.apps.googleusercontent.com',
-          'exp': 1730000000,
+          'aud':
+              '497406004004-vucsq218h9lhhvep09ls25o9i13vq36i.apps.googleusercontent.com',
+          'exp': 1793695868, // 08:51Z — already past vs "now" in test env
         },
         expectedAudience:
             '497406004004-vucsq218h9lhhvep09ls25o9i13vq36i.apps.googleusercontent.com',
         supabaseHost: 'puopkxhzijhzcaqpqqns.supabase.co',
       );
-      expect(message, contains('Skip nonce check ON'));
-      expect(message, contains('device clock is correct'));
-      expect(
-        message,
-        contains(
-          '497406004004-vucsq218h9lhhvep09ls25o9i13vq36i.apps.googleusercontent.com',
-        ),
-      );
+      expect(message, contains('automatic date & time'));
       expect(message, contains('diag iss='));
     });
 

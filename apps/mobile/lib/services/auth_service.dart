@@ -12,17 +12,15 @@ const List<String> kGoogleSignInScopes = <String>[
   'profile',
 ];
 
+/// Leeway when treating an ID token as already expired on-device.
+const Duration kGoogleIdTokenExpiryLeeway = Duration(seconds: 60);
+
 /// Google Auth via Supabase + `profiles` upsert for the femm user client.
 ///
 /// Native flow for `google_sign_in` 7.x + Supabase:
 /// 1. Initialize with the **Web** OAuth client ID (`GOOGLE_SERVER_CLIENT_ID`)
-/// 2. `authenticate()` → OIDC **ID token** (Credential Manager / GIS)
-/// 3. `signInWithIdToken(idToken:)` only
-///
-/// Do **not** attach a separately authorized access token. In v7, authn and
-/// authz are split; an access token from `authorizationClient` usually does
-/// not match the ID token `at_hash`, and GoTrue then returns **Bad ID token**.
-/// Omitting `accessToken` skips that check (supported by current GoTrue).
+/// 2. Clear any cached Google account, then `authenticate()` for a fresh ID token
+/// 3. `signInWithIdToken(idToken:)` only (no separate access token — avoids `at_hash`)
 class AuthService {
   AuthService({
     SupabaseClient? client,
@@ -64,17 +62,26 @@ class AuthService {
       await _client.auth.signOut();
     }
 
-    final GoogleSignInAccount account = await _googleSignIn.authenticate(
+    // google_sign_in 7: call signOut before authenticate to avoid a cached
+    // GoogleSignInAccount / stale ID token (exp already passed → Bad ID token).
+    await _googleSignIn.signOut();
+
+    var account = await _googleSignIn.authenticate(
       scopeHint: kGoogleSignInScopes,
     );
+    var idToken = _requireIdToken(account);
+    var claims = decodeJwtPayload(idToken);
 
-    final idToken = account.authentication.idToken;
-    if (idToken == null || idToken.isEmpty) {
-      throw StateError(
-        'Google Sign-In returned no ID token. Pass '
-        '--dart-define=GOOGLE_SERVER_CLIENT_ID=<Web client ID> '
-        '(same Web client as Supabase Auth → Google → Client IDs).',
+    if (isGoogleIdTokenExpired(claims)) {
+      await _googleSignIn.signOut();
+      account = await _googleSignIn.authenticate(
+        scopeHint: kGoogleSignInScopes,
       );
+      idToken = _requireIdToken(account);
+      claims = decodeJwtPayload(idToken);
+      if (isGoogleIdTokenExpired(claims)) {
+        throw StateError(expiredGoogleIdTokenMessage(claims));
+      }
     }
 
     final expectedAudience = SupabaseConfig.googleServerClientId.trim();
@@ -82,7 +89,6 @@ class AuthService {
       idToken,
       expectedAudience: expectedAudience,
     );
-    final claims = decodeJwtPayload(idToken);
 
     try {
       final response = await _client.auth.signInWithIdToken(
@@ -103,6 +109,18 @@ class AuthService {
         code: error.code,
       );
     }
+  }
+
+  String _requireIdToken(GoogleSignInAccount account) {
+    final idToken = account.authentication.idToken;
+    if (idToken == null || idToken.isEmpty) {
+      throw StateError(
+        'Google Sign-In returned no ID token. Pass '
+        '--dart-define=GOOGLE_SERVER_CLIENT_ID=<Web client ID> '
+        '(same Web client as Supabase Auth → Google → Client IDs).',
+      );
+    }
+    return idToken;
   }
 
   Future<void> signOut() async {
@@ -156,6 +174,40 @@ Map<String, dynamic> decodeJwtPayload(String jwt) {
   return payload;
 }
 
+DateTime? googleIdTokenExpiry(Map<String, dynamic> claims) {
+  final exp = claims['exp'];
+  if (exp is int) {
+    return DateTime.fromMillisecondsSinceEpoch(exp * 1000, isUtc: true);
+  }
+  if (exp is num) {
+    return DateTime.fromMillisecondsSinceEpoch(exp.toInt() * 1000, isUtc: true);
+  }
+  return null;
+}
+
+/// True when `exp` is already in the past (plus a small leeway).
+bool isGoogleIdTokenExpired(
+  Map<String, dynamic> claims, {
+  DateTime? now,
+  Duration leeway = kGoogleIdTokenExpiryLeeway,
+}) {
+  final expiry = googleIdTokenExpiry(claims);
+  if (expiry == null) {
+    return false;
+  }
+  final clock = (now ?? DateTime.now()).toUtc();
+  return !expiry.isAfter(clock.subtract(leeway));
+}
+
+String expiredGoogleIdTokenMessage(Map<String, dynamic> claims) {
+  final expiry = googleIdTokenExpiry(claims);
+  return 'Google returned an expired ID token '
+      '(exp=${expiry?.toIso8601String() ?? '?'}). '
+      'On the phone: Settings → Date & time → turn ON automatic date & time '
+      '(and automatic time zone), then force-stop the app and try again. '
+      'Stale Credential Manager tokens also cause Supabase Bad ID token.';
+}
+
 /// Ensures the ID token `aud` matches the Web client ID we asked Google for
 /// (and that Supabase Auth → Google must accept).
 void assertGoogleIdTokenAudience(
@@ -192,16 +244,13 @@ String googleIdTokenDiagnostics(
   Map<String, dynamic> claims, {
   String? expectedAudience,
   String? supabaseHost,
+  DateTime? now,
 }) {
   final aud = audienceFromClaims(claims).join(',');
-  final exp = claims['exp'];
-  String expLabel = '$exp';
-  if (exp is int) {
-    expLabel = DateTime.fromMillisecondsSinceEpoch(
-      exp * 1000,
-      isUtc: true,
-    ).toIso8601String();
-  }
+  final expiry = googleIdTokenExpiry(claims);
+  final expLabel = expiry?.toIso8601String() ?? '${claims['exp']}';
+  final clock = (now ?? DateTime.now()).toUtc();
+  final expired = isGoogleIdTokenExpired(claims, now: clock);
 
   String shorten(String? value) {
     if (value == null || value.isEmpty) {
@@ -215,7 +264,7 @@ String googleIdTokenDiagnostics(
 
   return 'diag iss=${claims['iss']} aud=${shorten(aud)} '
       'azp=${shorten(claims['azp']?.toString())} '
-      'exp=$expLabel nonce=${claims['nonce'] != null} '
+      'exp=$expLabel expired=$expired nonce=${claims['nonce'] != null} '
       'at_hash=${claims['at_hash'] != null} '
       'expect=${shorten(expectedAudience)} '
       'host=${supabaseHost ?? '?'}';
@@ -239,11 +288,12 @@ String userFacingGoogleAuthMessage(
         );
 
   if (lower.contains('bad id token')) {
+    if (claims != null && isGoogleIdTokenExpired(claims)) {
+      return '${expiredGoogleIdTokenMessage(claims)} ${diag ?? ''}';
+    }
     return 'Google ID token was rejected by Supabase (Bad ID token). '
-        'Confirm: (1) dart_defines GOOGLE_SERVER_CLIENT_ID is the Web client '
-        '497406004004-vucsq218h9lhhvep09ls25o9i13vq36i.apps.googleusercontent.com, '
-        '(2) same Web client ID + secret in Supabase Auth → Google → Client IDs, '
-        '(3) Skip nonce check ON, (4) device clock is correct. '
+        'If diag shows expired=true, set the phone to automatic date & time '
+        'and retry. Else confirm Web client ID / Skip nonce check. '
         '${diag ?? ''} '
         'See docs/supabase-setup.md §3e.';
   }
