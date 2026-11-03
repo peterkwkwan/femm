@@ -39,10 +39,29 @@ void main() {
     expect(find.text('femm'), findsOneWidget);
     final femm = tester.widget<Text>(find.text('femm'));
     expect(femm.style?.color, PetalSoft.ink);
+    expect(femm.style?.fontFamily, PetalSoft.fontFamily);
     expect(femm.style?.fontSize, DeepAccentDuskWelcome.stackedWordSize);
-    expect(femm.style?.fontWeight, FontWeight.w700);
+    expect(femm.style?.fontWeight, PetalSoft.wordmarkWeight);
+    expect(
+      femm.style?.letterSpacing,
+      PetalSoft.letterSpacingEm(
+        DeepAccentDuskWelcome.stackedWordSize,
+        PetalSoft.wordmarkTrackingEm,
+      ),
+    );
 
     expect(find.text('Welcome'), findsOneWidget);
+    final welcome = tester.widget<Text>(find.text('Welcome'));
+    expect(welcome.style?.fontFamily, PetalSoft.fontFamily);
+    expect(welcome.style?.fontSize, PetalSoft.welcomeSize);
+    expect(welcome.style?.fontWeight, PetalSoft.welcomeWeight);
+    expect(
+      welcome.style?.letterSpacing,
+      PetalSoft.letterSpacingEm(
+        PetalSoft.welcomeSize,
+        PetalSoft.welcomeTrackingEm,
+      ),
+    );
     expect(find.text(kWelcomeHelperCopy), findsOneWidget);
     expect(find.text('Continue with Google'), findsOneWidget);
     expect(find.byType(DeepAccentDuskHills), findsOneWidget);

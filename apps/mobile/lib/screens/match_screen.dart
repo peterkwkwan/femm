@@ -443,9 +443,9 @@ class _MatchScreenState extends State<MatchScreen>
                   Text(
                     countdownText,
                     style: theme.textTheme.titleMedium?.copyWith(
-                      fontFamily: PetalSoft.displayFontFamily,
+                      fontFamily: PetalSoft.fontFamily,
                       color: PetalSoft.ink,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w500,
                       fontSize: 18,
                     ),
                   ),
@@ -466,11 +466,15 @@ class _MatchScreenState extends State<MatchScreen>
                     Text(
                       MatchScreen.demoDoctorName(match.specialty),
                       style: theme.textTheme.titleLarge?.copyWith(
-                        fontFamily: PetalSoft.displayFontFamily,
+                        fontFamily: PetalSoft.fontFamily,
                         color: PetalSoft.ink,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w500,
                         fontSize: 20,
                         height: 1.2,
+                        letterSpacing: PetalSoft.letterSpacingEm(
+                          20,
+                          PetalSoft.welcomeTrackingEm,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 4),

@@ -24,8 +24,17 @@ void main() {
     expect(find.byType(CalmnessMark), findsOneWidget);
     expect(find.text('femm'), findsOneWidget);
     final femm = tester.widget<Text>(find.text('femm'));
-    expect(femm.style?.fontSize, 16);
+    expect(femm.style?.fontFamily, PetalSoft.fontFamily);
+    expect(femm.style?.fontSize, PetalSoft.wordmarkSize);
+    expect(femm.style?.fontWeight, PetalSoft.wordmarkWeight);
     expect(femm.style?.color, PetalSoft.ink);
+    expect(
+      femm.style?.letterSpacing,
+      PetalSoft.letterSpacingEm(
+        PetalSoft.wordmarkSize,
+        PetalSoft.wordmarkTrackingEm,
+      ),
+    );
     expect(find.text('Path A'), findsNothing);
     expect(find.text('PATH A'), findsNothing);
     expect(find.text('Welcome'), findsNothing);

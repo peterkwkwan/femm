@@ -102,11 +102,15 @@ class SignedInHome extends StatelessWidget {
                     Text(
                       '$first, start with your labs',
                       style: theme.textTheme.headlineSmall?.copyWith(
-                        fontFamily: PetalSoft.displayFontFamily,
+                        fontFamily: PetalSoft.fontFamily,
                         color: PetalSoft.ink,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w500,
                         fontSize: 28,
                         height: 1.15,
+                        letterSpacing: PetalSoft.letterSpacingEm(
+                          28,
+                          PetalSoft.welcomeTrackingEm,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 18),
@@ -139,10 +143,10 @@ class SignedInHome extends StatelessWidget {
                           Text(
                             'Upload a lab PDF',
                             style: theme.textTheme.titleMedium?.copyWith(
-                              fontFamily: PetalSoft.displayFontFamily,
+                              fontFamily: PetalSoft.fontFamily,
                               color: PetalSoft.ink,
                               fontSize: 18,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                           const SizedBox(height: 6),
@@ -241,9 +245,9 @@ class _IdentityQuiet extends StatelessWidget {
           child: Text(
             initial,
             style: theme.textTheme.titleSmall?.copyWith(
-              fontFamily: PetalSoft.displayFontFamily,
+              fontFamily: PetalSoft.fontFamily,
               color: PetalSoft.ink,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
               fontSize: 13,
             ),
           ),

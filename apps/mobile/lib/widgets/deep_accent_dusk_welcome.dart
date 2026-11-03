@@ -29,8 +29,8 @@ class DeepAccentDuskWelcome extends StatelessWidget {
   /// Slightly above the Stacked Corner mockup baseline (42).
   static const double stackedMarkSize = 48;
 
-  /// Larger + bold vs mockup wordSize 17 / weight 500.
-  static const double stackedWordSize = 22;
+  /// Inter Air wordmark size (mockup wordSize 16 / weight 500).
+  static const double stackedWordSize = PetalSoft.wordmarkSize;
 
   @override
   Widget build(BuildContext context) {
@@ -71,13 +71,7 @@ class DeepAccentDuskWelcome extends StatelessWidget {
               children: [
                 Text(
                   'Welcome',
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    color: PetalSoft.ink,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 26,
-                    height: 1.1,
-                    letterSpacing: -0.6,
-                  ),
+                  style: PetalSoft.welcomeTextStyle(),
                 ),
                 const SizedBox(height: 8),
                 ConstrainedBox(
@@ -144,6 +138,7 @@ class DeepAccentDuskWelcome extends StatelessWidget {
                             Text(
                               'Continue with Google',
                               style: TextStyle(
+                                fontFamily: PetalSoft.fontFamily,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -180,14 +175,7 @@ class _StackedCornerBrand extends StatelessWidget {
         const SizedBox(height: 6),
         Text(
           'femm',
-          style: TextStyle(
-            fontFamily: PetalSoft.displayFontFamily,
-            fontSize: wordSize,
-            fontWeight: FontWeight.w700,
-            color: PetalSoft.ink,
-            height: 1,
-            letterSpacing: wordSize * 0.08,
-          ),
+          style: PetalSoft.wordmarkTextStyle(size: wordSize),
         ),
       ],
     );

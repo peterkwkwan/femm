@@ -130,9 +130,14 @@ class _LabUploadScreenState extends State<LabUploadScreen> {
               Text(
                 'Your health-check labs',
                 style: theme.textTheme.headlineSmall?.copyWith(
-                  fontFamily: PetalSoft.displayFontFamily,
+                  fontFamily: PetalSoft.fontFamily,
+                  fontWeight: FontWeight.w500,
                   fontSize: 26,
                   height: 1.2,
+                  letterSpacing: PetalSoft.letterSpacingEm(
+                    26,
+                    PetalSoft.welcomeTrackingEm,
+                  ),
                 ),
               ),
               const SizedBox(height: 8),
@@ -276,9 +281,9 @@ class _ActionCard extends StatelessWidget {
                     Text(
                       title,
                       style: theme.textTheme.titleMedium?.copyWith(
-                        fontFamily: PetalSoft.displayFontFamily,
+                        fontFamily: PetalSoft.fontFamily,
                         fontSize: 17,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                     const SizedBox(height: 2),

@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 
 /// Locked Petal Soft visual direction (Path A mockups).
 ///
-/// Canvas tokens: blush canvas, rose accent, serif display headlines.
+/// Canvas tokens: blush canvas, rose accent, Inter Air typography
+/// (Inter throughout — lighter weights + airier tracking).
 abstract final class PetalSoft {
   static const Color bg = Color(0xFFF8EFEA);
   static const Color surface = Color(0xFFFFF9F6);
@@ -13,8 +14,48 @@ abstract final class PetalSoft {
   /// Mid bloom layer in the locked Calmness mark.
   static const Color blush = Color(0xFFE8C4BC);
 
-  /// Platform serif (Android → Noto/Droid Serif) for display headlines.
-  static const String displayFontFamily = 'serif';
+  /// Inter Air — single sans for display + UI (replaces platform serif).
+  static const String fontFamily = 'Inter';
+
+  /// Alias kept for call sites that previously targeted serif display.
+  static const String displayFontFamily = fontFamily;
+
+  /// Inter Air Welcome: medium, larger, −0.03em tracking.
+  static const double welcomeSize = 28;
+  static const FontWeight welcomeWeight = FontWeight.w500;
+  static const double welcomeTrackingEm = -0.03;
+
+  /// Inter Air wordmark (femm): medium, 0.04em tracking.
+  static const double wordmarkSize = 16;
+  static const FontWeight wordmarkWeight = FontWeight.w500;
+  static const double wordmarkTrackingEm = 0.04;
+
+  static double letterSpacingEm(double size, double em) => size * em;
+
+  static TextStyle welcomeTextStyle({Color color = ink}) {
+    return TextStyle(
+      fontFamily: fontFamily,
+      fontSize: welcomeSize,
+      fontWeight: welcomeWeight,
+      letterSpacing: letterSpacingEm(welcomeSize, welcomeTrackingEm),
+      height: 1.1,
+      color: color,
+    );
+  }
+
+  static TextStyle wordmarkTextStyle({
+    double size = wordmarkSize,
+    Color color = ink,
+  }) {
+    return TextStyle(
+      fontFamily: fontFamily,
+      fontSize: size,
+      fontWeight: wordmarkWeight,
+      letterSpacing: letterSpacingEm(size, wordmarkTrackingEm),
+      height: 1,
+      color: color,
+    );
+  }
 
   static const ColorScheme colorScheme = ColorScheme(
     brightness: Brightness.light,
@@ -37,6 +78,7 @@ abstract final class PetalSoft {
   static ThemeData theme() {
     final base = ThemeData(
       useMaterial3: true,
+      fontFamily: fontFamily,
       colorScheme: colorScheme,
       scaffoldBackgroundColor: bg,
       canvasColor: bg,
@@ -44,15 +86,19 @@ abstract final class PetalSoft {
     );
 
     final textTheme = base.textTheme.apply(
+      fontFamily: fontFamily,
       bodyColor: ink,
       displayColor: ink,
     );
 
     TextStyle display(TextStyle? style, {double? size, FontWeight? weight}) {
+      final resolvedSize = size ?? style?.fontSize ?? 24;
       return (style ?? const TextStyle()).copyWith(
-        fontFamily: displayFontFamily,
-        fontSize: size,
-        fontWeight: weight ?? FontWeight.w600,
+        fontFamily: fontFamily,
+        fontSize: resolvedSize,
+        // Inter Air: medium display, not heavy serif.
+        fontWeight: weight ?? FontWeight.w500,
+        letterSpacing: letterSpacingEm(resolvedSize, welcomeTrackingEm),
         color: ink,
         height: 1.15,
       );
@@ -63,35 +109,62 @@ abstract final class PetalSoft {
         displaySmall: display(textTheme.displaySmall, size: 32),
         headlineMedium: display(textTheme.headlineMedium, size: 26),
         headlineSmall: display(textTheme.headlineSmall, size: 22),
-        titleLarge: display(textTheme.titleLarge, size: 20),
-        titleMedium: textTheme.titleMedium?.copyWith(
-          color: ink,
-          fontWeight: FontWeight.w600,
+        titleLarge: display(
+          textTheme.titleLarge,
+          size: 20,
+          weight: FontWeight.w500,
         ),
-        bodyLarge: textTheme.bodyLarge?.copyWith(color: ink, height: 1.45),
-        bodyMedium: textTheme.bodyMedium?.copyWith(color: ink, height: 1.45),
-        bodySmall: textTheme.bodySmall?.copyWith(color: muted, height: 1.4),
+        titleMedium: textTheme.titleMedium?.copyWith(
+          fontFamily: fontFamily,
+          color: ink,
+          fontWeight: FontWeight.w500,
+        ),
+        titleSmall: textTheme.titleSmall?.copyWith(
+          fontFamily: fontFamily,
+          color: ink,
+          fontWeight: FontWeight.w500,
+        ),
+        bodyLarge: textTheme.bodyLarge?.copyWith(
+          fontFamily: fontFamily,
+          color: ink,
+          fontWeight: FontWeight.w400,
+          height: 1.45,
+        ),
+        bodyMedium: textTheme.bodyMedium?.copyWith(
+          fontFamily: fontFamily,
+          color: ink,
+          fontWeight: FontWeight.w400,
+          height: 1.45,
+        ),
+        bodySmall: textTheme.bodySmall?.copyWith(
+          fontFamily: fontFamily,
+          color: muted,
+          fontWeight: FontWeight.w400,
+          height: 1.4,
+        ),
         labelLarge: textTheme.labelLarge?.copyWith(
+          fontFamily: fontFamily,
           color: accent,
           fontWeight: FontWeight.w600,
           letterSpacing: 0.8,
         ),
+        labelMedium: textTheme.labelMedium?.copyWith(
+          fontFamily: fontFamily,
+          fontWeight: FontWeight.w500,
+        ),
+        labelSmall: textTheme.labelSmall?.copyWith(
+          fontFamily: fontFamily,
+          fontWeight: FontWeight.w500,
+        ),
       ),
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         backgroundColor: surface,
         foregroundColor: ink,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
         toolbarHeight: 64,
-        titleTextStyle: TextStyle(
-          fontFamily: displayFontFamily,
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-          color: ink,
-          letterSpacing: 1.28, // 0.08em at 16px
-          height: 1,
-        ),
+        titleTextStyle: wordmarkTextStyle(),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
@@ -104,6 +177,7 @@ abstract final class PetalSoft {
           minimumSize: const Size(64, 48),
           shape: const StadiumBorder(),
           textStyle: const TextStyle(
+            fontFamily: fontFamily,
             fontSize: 15,
             fontWeight: FontWeight.w600,
           ),
@@ -115,18 +189,38 @@ abstract final class PetalSoft {
           minimumSize: const Size(64, 48),
           side: BorderSide(color: ink.withValues(alpha: 0.18)),
           shape: const StadiumBorder(),
+          textStyle: const TextStyle(
+            fontFamily: fontFamily,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(foregroundColor: accent),
+        style: TextButton.styleFrom(
+          foregroundColor: accent,
+          textStyle: const TextStyle(
+            fontFamily: fontFamily,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ),
       chipTheme: ChipThemeData(
         backgroundColor: surface,
         selectedColor: accent,
         disabledColor: surface,
         secondarySelectedColor: accent,
-        labelStyle: const TextStyle(color: ink, fontSize: 13),
-        secondaryLabelStyle: const TextStyle(color: Colors.white, fontSize: 13),
+        labelStyle: const TextStyle(
+          fontFamily: fontFamily,
+          color: ink,
+          fontSize: 13,
+          fontWeight: FontWeight.w400,
+        ),
+        secondaryLabelStyle: const TextStyle(
+          fontFamily: fontFamily,
+          color: Colors.white,
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+        ),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         shape: const StadiumBorder(),
         side: BorderSide(color: ink.withValues(alpha: 0.18)),

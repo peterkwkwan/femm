@@ -143,27 +143,20 @@ class MarkLedTopBar extends StatelessWidget {
   }
 }
 
-/// 36px Calmness mark + quieter serif femm wordmark.
+/// 36px Calmness mark + quieter Inter Air femm wordmark.
 class MarkLedLockup extends StatelessWidget {
   const MarkLedLockup({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
+    return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        CalmnessMark(size: 36),
-        SizedBox(width: 10),
+        const CalmnessMark(size: 36),
+        const SizedBox(width: 10),
         Text(
           'femm',
-          style: TextStyle(
-            fontFamily: PetalSoft.displayFontFamily,
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: PetalSoft.ink,
-            height: 1,
-            letterSpacing: 1.28, // 0.08em
-          ),
+          style: PetalSoft.wordmarkTextStyle(),
         ),
       ],
     );
@@ -190,9 +183,9 @@ class MarkLedAvatar extends StatelessWidget {
       child: Text(
         initial.isEmpty ? '·' : initial[0].toUpperCase(),
         style: TextStyle(
-          fontFamily: PetalSoft.displayFontFamily,
+          fontFamily: PetalSoft.fontFamily,
           fontSize: size * 0.42,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w600,
           color: PetalSoft.ink,
           height: 1,
         ),
