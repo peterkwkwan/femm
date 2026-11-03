@@ -68,6 +68,7 @@ flutter:
     - assets/images/login-yoga-silhouette.png
 
   # Inter Air — bundled Inter (SIL OFL). Weights used for calm hierarchy.
+  # Cormorant Soft — login wordmark only (SIL OFL SemiBold Italic).
   fonts:
     - family: Inter
       fonts:
@@ -79,3 +80,8 @@ flutter:
           weight: 600
         - asset: assets/fonts/Inter-Bold.ttf
           weight: 700
+    - family: Cormorant Garamond
+      fonts:
+        - asset: assets/fonts/CormorantGaramond-SemiBoldItalic.ttf
+          weight: 600
+          style: italic

@@ -3,13 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('Petal Soft locks Inter Air — no serif display stack', () {
+  test('Petal Soft locks Inter Air UI + Cormorant Soft display wordmark', () {
     expect(PetalSoft.fontFamily, 'Inter');
-    expect(PetalSoft.displayFontFamily, 'Inter');
+    expect(PetalSoft.displayFontFamily, 'Cormorant Garamond');
     expect(PetalSoft.welcomeWeight, FontWeight.w500);
     expect(PetalSoft.welcomeSize, 28);
     expect(PetalSoft.wordmarkWeight, FontWeight.w500);
     expect(PetalSoft.wordmarkSize, 16);
+    expect(PetalSoft.majesticWordmarkSize, 44);
+    expect(PetalSoft.majesticWordmarkWeight, FontWeight.w600);
+    expect(PetalSoft.majesticWordmarkStyle, FontStyle.italic);
   });
 
   test('theme applies Inter across text + buttons', () {
@@ -24,5 +27,17 @@ void main() {
         ?.resolve(const <WidgetState>{});
     expect(filled?.fontFamily, 'Inter');
     expect(filled?.fontWeight, FontWeight.w600);
+  });
+
+  test('majestic wordmark style is Cormorant Soft italic', () {
+    final style = PetalSoft.majesticWordmarkTextStyle();
+    expect(style.fontFamily, 'Cormorant Garamond');
+    expect(style.fontSize, 44);
+    expect(style.fontWeight, FontWeight.w600);
+    expect(style.fontStyle, FontStyle.italic);
+    expect(
+      style.letterSpacing,
+      PetalSoft.letterSpacingEm(44, PetalSoft.majesticWordmarkTrackingEm),
+    );
   });
 }

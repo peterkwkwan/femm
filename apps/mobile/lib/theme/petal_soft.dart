@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 /// Locked Petal Soft visual direction (Path A mockups).
 ///
-/// Canvas tokens: blush canvas, rose accent, Inter Air typography
-/// (Inter throughout — lighter weights + airier tracking).
+/// Canvas tokens: blush canvas, rose accent, Inter Air UI typography,
+/// Cormorant Soft for the login majestic wordmark only.
 abstract final class PetalSoft {
   static const Color bg = Color(0xFFF8EFEA);
   static const Color surface = Color(0xFFFFF9F6);
@@ -13,22 +13,32 @@ abstract final class PetalSoft {
   static const Color accentSoft = Color(0xFFF0D9D4);
   /// Mid bloom layer in the locked Calmness mark.
   static const Color blush = Color(0xFFE8C4BC);
+  /// Dawn Mist atmosphere base wash.
+  static const Color mist = Color(0xFFF3E4DE);
+  /// Soft sky orb in Dawn Mist wash.
+  static const Color sky = Color(0xFFE8D5CE);
 
-  /// Inter Air — single sans for display + UI (replaces platform serif).
+  /// Inter Air — UI sans (Welcome / helper / CTA / nav wordmark).
   static const String fontFamily = 'Inter';
 
-  /// Alias kept for call sites that previously targeted serif display.
-  static const String displayFontFamily = fontFamily;
+  /// Cormorant Soft — login majestic femm wordmark only.
+  static const String displayFontFamily = 'Cormorant Garamond';
 
   /// Inter Air Welcome: medium, larger, −0.03em tracking.
   static const double welcomeSize = 28;
   static const FontWeight welcomeWeight = FontWeight.w500;
   static const double welcomeTrackingEm = -0.03;
 
-  /// Inter Air wordmark (femm): medium, 0.04em tracking.
+  /// Inter Air nav wordmark (femm): medium, 0.04em tracking.
   static const double wordmarkSize = 16;
   static const FontWeight wordmarkWeight = FontWeight.w500;
   static const double wordmarkTrackingEm = 0.04;
+
+  /// Cormorant Soft login wordmark: italic semibold ~44 / 0.06em.
+  static const double majesticWordmarkSize = 44;
+  static const FontWeight majesticWordmarkWeight = FontWeight.w600;
+  static const double majesticWordmarkTrackingEm = 0.06;
+  static const FontStyle majesticWordmarkStyle = FontStyle.italic;
 
   static double letterSpacingEm(double size, double em) => size * em;
 
@@ -53,6 +63,22 @@ abstract final class PetalSoft {
       fontWeight: wordmarkWeight,
       letterSpacing: letterSpacingEm(size, wordmarkTrackingEm),
       height: 1,
+      color: color,
+    );
+  }
+
+  /// Login hero wordmark — Cormorant Soft (not Inter Air / not nav size).
+  static TextStyle majesticWordmarkTextStyle({
+    double size = majesticWordmarkSize,
+    Color color = ink,
+  }) {
+    return TextStyle(
+      fontFamily: displayFontFamily,
+      fontSize: size,
+      fontWeight: majesticWordmarkWeight,
+      fontStyle: majesticWordmarkStyle,
+      letterSpacing: letterSpacingEm(size, majesticWordmarkTrackingEm),
+      height: 0.95,
       color: color,
     );
   }

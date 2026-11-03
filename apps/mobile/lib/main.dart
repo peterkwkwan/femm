@@ -5,7 +5,7 @@ import 'config/supabase_config.dart';
 import 'screens/signed_in_home.dart';
 import 'services/auth_service.dart';
 import 'theme/petal_soft.dart';
-import 'widgets/deep_accent_dusk_welcome.dart';
+import 'widgets/dawn_mist_welcome.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -112,7 +112,7 @@ class SignInShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DeepAccentDuskWelcome(
+    return DawnMistWelcome(
       busy: busy,
       error: error,
       usingPlaceholders: usingPlaceholders,
