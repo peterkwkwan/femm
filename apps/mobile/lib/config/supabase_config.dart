@@ -24,7 +24,9 @@ class SupabaseConfig {
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.placeholder',
   );
 
-  /// Google Cloud **Web** OAuth client ID (same as Supabase Auth → Google).
+  /// Google Cloud **Web** OAuth client ID.
+  ///
+  /// Must match Supabase Auth → Google → Client IDs (not the Android client).
   /// Required for Android ID-token → `signInWithIdToken`.
   static const String googleServerClientId = String.fromEnvironment(
     'GOOGLE_SERVER_CLIENT_ID',

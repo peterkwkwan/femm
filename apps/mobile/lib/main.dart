@@ -53,7 +53,11 @@ class _AuthGateState extends State<AuthGate> {
       await action();
     } catch (error) {
       setState(() {
-        _error = error.toString();
+        _error = switch (error) {
+          AuthException(:final message) => message,
+          StateError(:final message) => message,
+          _ => error.toString(),
+        };
       });
     } finally {
       if (mounted) {

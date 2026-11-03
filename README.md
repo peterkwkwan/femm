@@ -33,9 +33,10 @@ Full click-path (Google OAuth, redirects, SHA-1, SQL, bucket): **[`docs/supabase
 2. **Project Settings → API:** copy **Project URL** + **anon** `public` key. Never put **service_role** in the apps or git.
 3. Google Cloud: OAuth consent (Testing + test users) → **Web** OAuth client with redirect  
    `https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback` and origin `http://localhost:5173`.
-4. Supabase → **Authentication → Providers → Google:** paste Web Client ID + Secret.  
+4. Supabase → **Authentication → Providers → Google:** paste Web Client ID into **Client IDs**, paste Web Client Secret, turn **Skip nonce check** ON.  
    **URL Configuration:** Site URL `http://localhost:5173`; allow that redirect.
-5. Google Cloud → **Android** OAuth client: package `com.femm.femm_app` + debug SHA-1.
+5. Google Cloud → **Android** OAuth client: package `com.femm.femm_app` + debug SHA-1.  
+   Flutter `GOOGLE_SERVER_CLIENT_ID` must be the **Web** client ID (same as Supabase Client IDs), not the Android one.
 6. Run SQL in `supabase/migrations/20261031140000_profiles_and_lab_pdfs.sql` (profiles RLS + private `lab-pdfs` bucket).
 7. **Phase 1 schema + seed** (after 0.5 SQL): run `20261101120000_phase1_clinical_and_upsell_supply.sql`, then reset demo supply — see **[`docs/phase1-demo-seed.md`](./docs/phase1-demo-seed.md)**.
 8. **Phase 2:** run `20261101140000_phase2_lab_documents.sql`, then deploy `extract-lab-pdf` — see **[`docs/phase2-lab-extract.md`](./docs/phase2-lab-extract.md)**.

@@ -104,7 +104,7 @@ This environment has no Flutter SDK / emulator. Peter (or CI with Android) shoul
 4. Optional hold spot-check: open match → wait for expire (or set `held_until` / `hold_expires_at` past in SQL) → re-hold → confirm.
 5. Portal Path C on the same machine while Flutter stays signed in as Account A.
 
-If Auth fails: re-check [`supabase-setup.md`](./supabase-setup.md) (Web client ID as `GOOGLE_SERVER_CLIENT_ID`, Android SHA-1, Supabase Google provider).
+If Auth fails: re-check [`supabase-setup.md`](./supabase-setup.md) §2c–3e (Web client ID as `GOOGLE_SERVER_CLIENT_ID` **and** Supabase Client IDs, Skip nonce check ON, Android SHA-1, `openid` scope). **Bad ID token** after the Google picker is almost always that checklist, not the login UI.
 
 ---
 

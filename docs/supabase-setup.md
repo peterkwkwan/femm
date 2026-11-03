@@ -58,11 +58,14 @@ Supabase Auth will federate Google. You create a Google Cloud OAuth **Web** clie
 
 1. Open [Google Cloud Console](https://console.cloud.google.com/).
 2. Create a project (e.g. `femm`) or reuse an existing one. Note: this is **not** a Firebase project requirement anymore.
-3. **APIs & Services → OAuth consent screen**.
+3. **APIs & Services → OAuth consent screen** (Google Auth Platform → Audience / Data Access on newer consoles).
 4. User type **External** (unless Workspace Internal fits you).
 5. App name `femm`, support email, developer contact → Save.
 6. Publishing **Testing** is fine: under **Test users**, add the Google accounts you and practitioners will use.
-7. Scopes: default (`email`, `profile`, `openid`) is enough for prototype sign-in.
+7. Scopes / Data Access — include all three:
+   - `openid` (**add manually** if missing)
+   - `.../auth/userinfo.email`
+   - `.../auth/userinfo.profile`
 
 ### 2b. Create OAuth Web client
 
@@ -94,8 +97,13 @@ Supabase Auth will federate Google. You create a Google Cloud OAuth **Web** clie
 
 1. Supabase Dashboard → **Authentication → Providers → Google**.
 2. Enable Google.
-3. Paste **Client ID** and **Client Secret** from Google Cloud.
-4. Save.
+3. **Client IDs** (sometimes labeled **Authorized Client IDs**): paste the **Web** OAuth Client ID from Step 2b.  
+   This is the audience Supabase accepts on native `signInWithIdToken`. It must be the **same** string as Flutter’s `GOOGLE_SERVER_CLIENT_ID`.  
+   Do **not** put only the Android client ID here. If the UI allows a comma-separated list, Web client ID first; Android/iOS IDs are optional extras.
+4. **Client Secret**: paste the Web client secret from Step 2b (needed for the portal browser OAuth flow).
+5. Turn **Skip nonce check** **ON**.  
+   `google_sign_in` on Flutter does not round-trip a nonce the way Supabase Auth expects by default; leaving this off causes native sign-in failures (especially once you add iOS).
+6. Save.
 
 ### 2d. Site URL and redirect allow list
 
@@ -149,10 +157,27 @@ After cutover, mobile typically needs:
 
 - `SUPABASE_URL`
 - `SUPABASE_ANON_KEY`
-- Web **Client ID** (same as Supabase Google provider) for requesting an ID token — often passed as `--dart-define=GOOGLE_SERVER_CLIENT_ID=...` or equivalent env used by `google_sign_in`
+- Web **Client ID** (same as Supabase Auth → Google → Client IDs) for requesting an ID token — passed as `--dart-define=GOOGLE_SERVER_CLIENT_ID=...`
 
 Mobile dart-defines: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `GOOGLE_SERVER_CLIENT_ID`  
 (see root README / `apps/mobile/dart_defines.example.json`). This doc locks the **values you must create**.
+
+`AuthService` uses `google_sign_in` 7.x: `initialize(serverClientId: WEB_CLIENT_ID)` → `authenticate()` for the **ID token** → `authorizationClient` for the **access token** → Supabase `signInWithIdToken(idToken:, accessToken:)`. Never pass an access token as `idToken`.
+
+### 3e. Troubleshoot `AuthApiException … Bad ID token`
+
+Google account picker succeeded, then the login screen shows **Bad ID token** (HTTP 400). That means Supabase Auth received a token string but **OIDC verification failed** (malformed JWT, bad signature/`iss`, or expired). Closely related misconfigs show different messages (`Unacceptable audience…`, nonce errors).
+
+Check in order:
+
+1. **`GOOGLE_SERVER_CLIENT_ID` is the Web client ID** (`….apps.googleusercontent.com`), not the Android client ID and not the client secret. Rebuild after editing `dart_defines.json` (`flutter run --dart-define-from-file=dart_defines.json`).
+2. **Supabase Auth → Google → Client IDs** contains that **exact** Web client ID; **Client Secret** is the matching Web secret; provider is enabled.
+3. **Skip nonce check** is **ON**.
+4. Google Cloud has an **Android** OAuth client for `com.femm.femm_app` + **this machine’s** debug SHA-1 (Step 3b–3c). Wrong SHA-1 usually fails earlier (null ID token / Play Services errors), but keep it correct.
+5. Consent screen **Testing** → your Google account is a **test user**; Data Access includes **`openid`**.
+6. Supabase **Authentication → Logs**: look for the internal OIDC error behind `Bad ID token` (e.g. malformed JWT vs JWKS/verify failure).
+
+If the app instead says the ID token `aud` does not match `GOOGLE_SERVER_CLIENT_ID`, fix the dart-define / Client IDs mismatch before anything else.
 
 ---
 
@@ -328,10 +353,13 @@ Once mobile + portal talk only to Supabase:
 - [ ] Supabase project created on **Free**; region noted
 - [ ] Project URL + **anon** key copied (service_role kept secret)
 - [ ] Google OAuth consent screen + test users
-- [ ] Google **Web** client: Client ID + secret in Supabase Auth → Google
+- [ ] Google **Web** client: Client ID (+ secret) in Supabase Auth → Google **Client IDs**
+- [ ] Supabase Google provider: **Skip nonce check** ON
+- [ ] Google consent scopes include **`openid`** + email + profile; test users added
 - [ ] Redirect URI `https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback` authorized in Google Cloud
 - [ ] Supabase Site URL + redirect allow list include `http://localhost:5173`
 - [ ] Android OAuth client: `com.femm.femm_app` + debug SHA-1
+- [ ] `GOOGLE_SERVER_CLIENT_ID` dart-define equals that Web client ID (byte-for-byte)
 - [ ] `profiles` table + RLS policies applied
 - [ ] Private `lab-pdfs` bucket + own-uid policies
 - [ ] Flutter runs with Supabase URL/anon key + Web client ID; Google sign-in upserts profile
