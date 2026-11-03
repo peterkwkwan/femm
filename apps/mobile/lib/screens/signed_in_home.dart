@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../constants/disclaimers.dart';
 import '../theme/petal_soft.dart';
 import 'lab_upload_screen.dart';
 
@@ -217,28 +216,12 @@ class SignedInHome extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 10),
-              Row(
-                children: [
-                  Text(
-                    'Path A · Labs 1 of 4',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: PetalSoft.muted,
-                      fontSize: 11,
-                    ),
-                  ),
-                  const Spacer(),
-                  Flexible(
-                    child: Text(
-                      FemmDisclaimers.oneLiner,
-                      textAlign: TextAlign.end,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: PetalSoft.muted,
-                        fontSize: 11,
-                        height: 1.45,
-                      ),
-                    ),
-                  ),
-                ],
+              Text(
+                'Path A · Labs 1 of 4',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: PetalSoft.muted,
+                  fontSize: 11,
+                ),
               ),
             ],
           ),

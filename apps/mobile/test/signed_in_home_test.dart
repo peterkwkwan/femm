@@ -1,4 +1,3 @@
-import 'package:femm_app/constants/disclaimers.dart';
 import 'package:femm_app/screens/signed_in_home.dart';
 import 'package:femm_app/theme/petal_soft.dart';
 import 'package:flutter/material.dart';
@@ -95,7 +94,7 @@ void main() {
     expect(find.text('GOOD MORNING'), findsNothing);
   });
 
-  testWidgets('Next-step hero shows identity, Upload, Path A rail, disclaimer',
+  testWidgets('Next-step hero shows identity, Upload, Path A rail',
       (tester) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -127,7 +126,7 @@ void main() {
     expect(find.text('Upload a lab PDF'), findsOneWidget);
     expect(find.text('Upload lab PDF'), findsOneWidget);
     expect(find.text('Path A · Labs 1 of 4'), findsOneWidget);
-    expect(find.text(FemmDisclaimers.oneLiner), findsOneWidget);
+    expect(find.text('Care-navigation only — not a diagnosis.'), findsNothing);
     expect(find.text('Signed in'), findsNothing);
 
     await tester.tap(find.text('Sign out'));
