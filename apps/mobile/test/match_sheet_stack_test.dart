@@ -192,4 +192,133 @@ void main() {
     expect(find.byTooltip(MatchScreen.shareActionLabel), findsOneWidget);
     expect(find.byTooltip(MatchScreen.calendarActionLabel), findsOneWidget);
   });
+
+  test('confirm stack drop timing is calm Petal Soft (sub-second, staggered)',
+      () {
+    expect(MatchScreen.stackDropDuration, const Duration(milliseconds: 560));
+    expect(MatchConfirmStackDrop.cardDropPx, greaterThan(0));
+    expect(MatchConfirmStackDrop.extrasDropPx, greaterThan(0));
+    expect(
+      MatchConfirmStackDrop.extrasInterval.begin,
+      greaterThan(MatchConfirmStackDrop.cardInterval.begin),
+    );
+    expect(MatchConfirmStackDrop.cardProgress(0), 0);
+    expect(MatchConfirmStackDrop.extrasProgress(0), 0);
+    expect(MatchConfirmStackDrop.clipProgress(0), 0);
+    expect(MatchConfirmStackDrop.cardProgress(1), 1);
+    expect(MatchConfirmStackDrop.extrasProgress(1), 1);
+    expect(MatchConfirmStackDrop.clipProgress(1), 1);
+    // Midway: card leads extras (stack cascade downward).
+    final mid = MatchConfirmStackDrop.cardProgress(0.35);
+    final midExtras = MatchConfirmStackDrop.extrasProgress(0.35);
+    expect(mid, greaterThan(midExtras));
+  });
+
+  testWidgets(
+      'confirm stack drop reveals booked card + OPTIONAL EXTRAS downward',
+      (tester) async {
+    late AnimationController controller;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: PetalSoft.theme(),
+        home: Scaffold(
+          body: Center(
+            child: SizedBox(
+              width: 320,
+              child: _StackDropHarness(
+                onReady: (c) => controller = c,
+                childBuilder: (animation) => MatchConfirmStackDrop(
+                  key: MatchScreen.confirmStackKey,
+                  animation: animation,
+                  bookedCard: KeyedSubtree(
+                    key: MatchScreen.bookedCardKey,
+                    child: Container(
+                      height: 80,
+                      color: PetalSoft.surface,
+                      alignment: Alignment.center,
+                      child: const Text('Clinical · booked'),
+                    ),
+                  ),
+                  extras: KeyedSubtree(
+                    key: MatchScreen.extrasSectionKey,
+                    child: Container(
+                      height: 60,
+                      color: PetalSoft.accentSoft,
+                      alignment: Alignment.center,
+                      child: const Text(MatchScreen.extrasSectionLabel),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byKey(MatchScreen.confirmStackKey), findsOneWidget);
+    expect(find.byKey(MatchScreen.bookedCardKey), findsOneWidget);
+    expect(find.byKey(MatchScreen.extrasSectionKey), findsOneWidget);
+    expect(find.text(MatchScreen.extrasSectionLabel), findsOneWidget);
+
+    controller.value = 0;
+    await tester.pump();
+    final startHeight =
+        tester.getSize(find.byKey(MatchScreen.confirmStackKey)).height;
+
+    controller.value = 0.45;
+    await tester.pump();
+    final midHeight =
+        tester.getSize(find.byKey(MatchScreen.confirmStackKey)).height;
+
+    controller.value = 1;
+    await tester.pump();
+    final endHeight =
+        tester.getSize(find.byKey(MatchScreen.confirmStackKey)).height;
+
+    expect(midHeight, greaterThan(startHeight));
+    expect(endHeight, greaterThanOrEqualTo(midHeight));
+    expect(endHeight, greaterThan(startHeight));
+    expect(tester.takeException(), isNull);
+  });
+}
+
+/// Tiny harness so [MatchConfirmStackDrop] gets a real [AnimationController].
+class _StackDropHarness extends StatefulWidget {
+  const _StackDropHarness({
+    required this.onReady,
+    required this.childBuilder,
+  });
+
+  final ValueChanged<AnimationController> onReady;
+  final Widget Function(Animation<double> animation) childBuilder;
+
+  @override
+  State<_StackDropHarness> createState() => _StackDropHarnessState();
+}
+
+class _StackDropHarnessState extends State<_StackDropHarness>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: MatchScreen.stackDropDuration,
+      value: 0,
+    );
+    widget.onReady(_controller);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.childBuilder(_controller);
 }

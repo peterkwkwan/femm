@@ -16,8 +16,8 @@ import '../widgets/path_a_step_header.dart';
 ///
 /// Before clinical confirm: appointment details + Book this appointment;
 /// optional extras stay off-screen. After confirm: You're set (upward check
-/// tick), Share + Google Calendar on the clinic card, extras expand reveal,
-/// Back to home as primary pill.
+/// tick), then clinical booked card + OPTIONAL EXTRAS drop/reveal as a calm
+/// downward stack; Back to home as primary pill.
 class MatchScreen extends StatefulWidget {
   const MatchScreen({
     super.key,
@@ -40,6 +40,14 @@ class MatchScreen extends StatefulWidget {
   static const String bookAppointmentLabel = 'Book this appointment';
   static const String shareActionLabel = 'Share';
   static const String calendarActionLabel = 'Add to Google Calendar';
+
+  /// Calm Petal Soft stack drop after clinical confirm.
+  static const Duration stackDropDuration = Duration(milliseconds: 560);
+  static const Key confirmStackKey = ValueKey<String>('match-confirm-stack');
+  static const Key bookedCardKey =
+      ValueKey<String>('match-booked-clinical-card');
+  static const Key extrasSectionKey =
+      ValueKey<String>('match-optional-extras');
 
   /// Demo doctor labels for seed clinics (not real practitioners).
   static String demoDoctorName(ClinicalSpecialty specialty) {
@@ -127,7 +135,7 @@ class MatchScreen extends StatefulWidget {
 }
 
 class _MatchScreenState extends State<MatchScreen>
-    with WidgetsBindingObserver, SingleTickerProviderStateMixin {
+    with WidgetsBindingObserver, TickerProviderStateMixin {
   late final MatchService _match = widget.matchService ?? MatchService();
 
   PathAMatch? _matchRow;
@@ -145,6 +153,7 @@ class _MatchScreenState extends State<MatchScreen>
   bool _sheetExpanded = false;
   bool _extrasExpanded = true;
   bool _didPlayCheckTick = false;
+  bool _didPlayStackDrop = false;
   String? _busyPartnerId;
   String? _error;
   Duration _remaining = Duration.zero;
@@ -154,6 +163,8 @@ class _MatchScreenState extends State<MatchScreen>
   late final Animation<double> _checkTickY;
   late final Animation<double> _checkTickScale;
   late final Animation<double> _checkStroke;
+
+  late final AnimationController _stackDropController;
 
   @override
   void initState() {
@@ -183,6 +194,10 @@ class _MatchScreenState extends State<MatchScreen>
         curve: const Interval(0.4, 1, curve: Curves.easeOut),
       ),
     );
+    _stackDropController = AnimationController(
+      vsync: this,
+      duration: MatchScreen.stackDropDuration,
+    );
     _bootstrap();
   }
 
@@ -191,6 +206,7 @@ class _MatchScreenState extends State<MatchScreen>
     WidgetsBinding.instance.removeObserver(this);
     _ticker?.cancel();
     _checkTickController.dispose();
+    _stackDropController.dispose();
     super.dispose();
   }
 
@@ -198,6 +214,17 @@ class _MatchScreenState extends State<MatchScreen>
     if (_clinical == null || _didPlayCheckTick) return;
     _didPlayCheckTick = true;
     _checkTickController.forward(from: 0);
+  }
+
+  void _playStackDropIfNeeded() {
+    if (_clinical == null || _didPlayStackDrop) return;
+    _didPlayStackDrop = true;
+    _stackDropController.forward(from: 0);
+  }
+
+  void _playConfirmMotionIfNeeded() {
+    _playCheckTickIfNeeded();
+    _playStackDropIfNeeded();
   }
 
   /// Leave-and-return: refresh hold / booking state when app resumes.
@@ -227,7 +254,7 @@ class _MatchScreenState extends State<MatchScreen>
         _error = null;
       });
       _syncCountdown();
-      _playCheckTickIfNeeded();
+      _playConfirmMotionIfNeeded();
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = e.toString());
@@ -260,7 +287,7 @@ class _MatchScreenState extends State<MatchScreen>
         _error = null;
       });
       _syncCountdown();
-      _playCheckTickIfNeeded();
+      _playConfirmMotionIfNeeded();
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -349,7 +376,7 @@ class _MatchScreenState extends State<MatchScreen>
         _extrasExpanded = true;
       });
       _ticker?.cancel();
-      _playCheckTickIfNeeded();
+      _playConfirmMotionIfNeeded();
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -511,9 +538,18 @@ class _MatchScreenState extends State<MatchScreen>
                         ] else ...[
                           _buildYoureSetHeader(context),
                           const SizedBox(height: 4),
-                          _buildBookedClinicalCard(context),
-                          const SizedBox(height: 14),
-                          _buildExtrasReveal(context),
+                          MatchConfirmStackDrop(
+                            key: MatchScreen.confirmStackKey,
+                            animation: _stackDropController,
+                            bookedCard: KeyedSubtree(
+                              key: MatchScreen.bookedCardKey,
+                              child: _buildBookedClinicalCard(context),
+                            ),
+                            extras: KeyedSubtree(
+                              key: MatchScreen.extrasSectionKey,
+                              child: _buildExtrasReveal(context),
+                            ),
+                          ),
                           const SizedBox(height: 18),
                           FilledButton(
                             onPressed: _goHome,
@@ -1167,6 +1203,82 @@ class _MatchScreenState extends State<MatchScreen>
             ),
         ],
       ),
+    );
+  }
+}
+
+/// Calm Petal Soft stack: clinical booked card + OPTIONAL EXTRAS drop/reveal
+/// downward after clinical confirm (staggered card → extras).
+class MatchConfirmStackDrop extends StatelessWidget {
+  const MatchConfirmStackDrop({
+    super.key,
+    required this.animation,
+    required this.bookedCard,
+    required this.extras,
+    this.gap = 14,
+  });
+
+  final Animation<double> animation;
+  final Widget bookedCard;
+  final Widget extras;
+  final double gap;
+
+  /// Card leads the drop; extras follow a beat later.
+  static const Interval cardInterval =
+      Interval(0.0, 0.58, curve: Curves.easeOutCubic);
+  static const Interval extrasInterval =
+      Interval(0.18, 0.92, curve: Curves.easeOutCubic);
+  static const Interval clipInterval =
+      Interval(0.0, 0.88, curve: Curves.easeOutCubic);
+
+  /// Slide distance (px) for the downward drop.
+  static const double cardDropPx = 28;
+  static const double extrasDropPx = 22;
+
+  /// Progress helpers for unit tests (interval-mapped 0→1).
+  static double cardProgress(double t) => cardInterval.transform(t.clamp(0, 1));
+  static double extrasProgress(double t) =>
+      extrasInterval.transform(t.clamp(0, 1));
+  static double clipProgress(double t) => clipInterval.transform(t.clamp(0, 1));
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: animation,
+      builder: (context, _) {
+        final t = animation.value.clamp(0.0, 1.0);
+        final clip = clipProgress(t);
+        final cardT = cardProgress(t);
+        final extrasT = extrasProgress(t);
+
+        return ClipRect(
+          child: Align(
+            alignment: Alignment.topCenter,
+            heightFactor: clip <= 0 ? 0.0001 : clip,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Opacity(
+                  opacity: cardT,
+                  child: Transform.translate(
+                    offset: Offset(0, (1 - cardT) * -cardDropPx),
+                    child: bookedCard,
+                  ),
+                ),
+                SizedBox(height: gap),
+                Opacity(
+                  opacity: extrasT,
+                  child: Transform.translate(
+                    offset: Offset(0, (1 - extrasT) * -extrasDropPx),
+                    child: extras,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
