@@ -101,6 +101,7 @@ void main() {
         supabaseHost: 'puopkxhzijhzcaqpqqns.supabase.co',
       );
       expect(message, contains('Skip nonce check ON'));
+      expect(message, contains('device clock is correct'));
       expect(
         message,
         contains(

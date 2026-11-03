@@ -5,9 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/supabase_config.dart';
 
-/// Scopes Supabase Auth expects when exchanging a Google ID token.
-///
-/// Include `openid` so Credential Manager / GIS mint a proper OIDC ID token.
+/// Scopes requested during Google authentication (OIDC ID token).
 const List<String> kGoogleSignInScopes = <String>[
   'openid',
   'email',
@@ -16,11 +14,15 @@ const List<String> kGoogleSignInScopes = <String>[
 
 /// Google Auth via Supabase + `profiles` upsert for the femm user client.
 ///
-/// Native flow follows Supabase + `google_sign_in` 7.x:
+/// Native flow for `google_sign_in` 7.x + Supabase:
 /// 1. Initialize with the **Web** OAuth client ID (`GOOGLE_SERVER_CLIENT_ID`)
-/// 2. Authenticate for an ID token
-/// 3. Authorize scopes for an access token
-/// 4. `signInWithIdToken(idToken:, accessToken:)`
+/// 2. `authenticate()` → OIDC **ID token** (Credential Manager / GIS)
+/// 3. `signInWithIdToken(idToken:)` only
+///
+/// Do **not** attach a separately authorized access token. In v7, authn and
+/// authz are split; an access token from `authorizationClient` usually does
+/// not match the ID token `at_hash`, and GoTrue then returns **Bad ID token**.
+/// Omitting `accessToken` skips that check (supported by current GoTrue).
 class AuthService {
   AuthService({
     SupabaseClient? client,
@@ -56,6 +58,12 @@ class AuthService {
   Future<AuthResponse> signInWithGoogle() async {
     await _ensureGoogleInitialized();
 
+    // Drop any stale Supabase JWT so a failed prior attempt does not trigger
+    // noisy /logout?scope=local 403 bad_jwt rows while diagnosing sign-in.
+    if (_client.auth.currentSession != null) {
+      await _client.auth.signOut();
+    }
+
     final GoogleSignInAccount account = await _googleSignIn.authenticate(
       scopeHint: kGoogleSignInScopes,
     );
@@ -76,22 +84,10 @@ class AuthService {
     );
     final claims = decodeJwtPayload(idToken);
 
-    // google_sign_in 7 splits authn from authz: ID token from authenticate(),
-    // access token from authorizationClient.
-    final GoogleSignInClientAuthorization authorization =
-        await account.authorizationClient.authorizationForScopes(
-              kGoogleSignInScopes,
-            ) ??
-            await account.authorizationClient.authorizeScopes(
-              kGoogleSignInScopes,
-            );
-
     try {
-      final response = await _signInWithGoogleTokens(
+      final response = await _client.auth.signInWithIdToken(
+        provider: OAuthProvider.google,
         idToken: idToken,
-        accessToken: authorization.accessToken,
-        claims: claims,
-        expectedAudience: expectedAudience,
       );
       await _upsertProfile(response.user ?? _client.auth.currentUser);
       return response;
@@ -109,35 +105,6 @@ class AuthService {
     }
   }
 
-  /// Prefer idToken+accessToken; if Supabase returns Bad ID token and the JWT
-  /// has `at_hash`, retry idToken-only (v7 authz token may not match at_hash).
-  Future<AuthResponse> _signInWithGoogleTokens({
-    required String idToken,
-    required String accessToken,
-    required Map<String, dynamic> claims,
-    required String expectedAudience,
-  }) async {
-    try {
-      return await _client.auth.signInWithIdToken(
-        provider: OAuthProvider.google,
-        idToken: idToken,
-        accessToken: accessToken,
-      );
-    } on AuthException catch (error) {
-      final hasAtHash = claims['at_hash'] != null;
-      final isBadIdToken = error.message.toLowerCase().contains('bad id token');
-      if (!isBadIdToken || !hasAtHash) {
-        rethrow;
-      }
-      // Separate authorizeScopes access tokens often do not match at_hash from
-      // the Credential Manager ID token; GoTrue then fails VerifyAccessToken.
-      return _client.auth.signInWithIdToken(
-        provider: OAuthProvider.google,
-        idToken: idToken,
-      );
-    }
-  }
-
   Future<void> signOut() async {
     await _ensureGoogleInitialized();
     await Future.wait<void>([
@@ -146,9 +113,9 @@ class AuthService {
     ]);
   }
 
-  Future<void> _upsertProfile(User? user) async {
+  Future<void> _upsertProfile(User? user) {
     if (user == null) {
-      return;
+      return Future<void>.value();
     }
     final meta = user.userMetadata ?? const <String, dynamic>{};
     final displayName = (meta['full_name'] ??
@@ -156,7 +123,7 @@ class AuthService {
             meta['display_name'])
         ?.toString();
 
-    await _client.from('profiles').upsert(
+    return _client.from('profiles').upsert(
       <String, dynamic>{
         'id': user.id,
         'email': user.email,
@@ -276,8 +243,7 @@ String userFacingGoogleAuthMessage(
         'Confirm: (1) dart_defines GOOGLE_SERVER_CLIENT_ID is the Web client '
         '497406004004-vucsq218h9lhhvep09ls25o9i13vq36i.apps.googleusercontent.com, '
         '(2) same Web client ID + secret in Supabase Auth → Google → Client IDs, '
-        '(3) Skip nonce check ON, (4) Android OAuth client com.femm.femm_app '
-        'SHA-1 matches this install. '
+        '(3) Skip nonce check ON, (4) device clock is correct. '
         '${diag ?? ''} '
         'See docs/supabase-setup.md §3e.';
   }

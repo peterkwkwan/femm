@@ -162,7 +162,7 @@ After cutover, mobile typically needs:
 Mobile dart-defines: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `GOOGLE_SERVER_CLIENT_ID`  
 (see root README / `apps/mobile/dart_defines.example.json`). This doc locks the **values you must create**.
 
-`AuthService` uses `google_sign_in` 7.x: `initialize(serverClientId: WEB_CLIENT_ID)` → `authenticate()` for the **ID token** → `authorizationClient` for the **access token** → Supabase `signInWithIdToken(idToken:, accessToken:)`. Never pass an access token as `idToken`.
+`AuthService` uses `google_sign_in` 7.x: `initialize(serverClientId: WEB_CLIENT_ID)` → `authenticate()` for the **ID token** → Supabase `signInWithIdToken(idToken:)` (**no** separate access token). In v7, authn/authz are split; attaching an `authorizationClient` access token often fails GoTrue’s `at_hash` check with **Bad ID token**. Never pass an access token as `idToken`.
 
 ### 3e. Troubleshoot `AuthApiException … Bad ID token`
 
