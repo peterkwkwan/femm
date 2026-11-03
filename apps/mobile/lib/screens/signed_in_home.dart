@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../theme/petal_soft.dart';
+import '../widgets/mark_led_app_bar.dart';
 import 'lab_upload_screen.dart';
 
 /// Signed-in home — Next-step hero (Petal Soft).
@@ -73,158 +74,140 @@ class SignedInHome extends StatelessWidget {
     return Scaffold(
       backgroundColor: PetalSoft.bg,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(22, 12, 22, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                children: [
-                  Text(
-                    'femm',
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontFamily: PetalSoft.displayFontFamily,
-                      color: PetalSoft.accent,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 22,
-                      height: 1,
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: busy ? null : onSignOut,
-                    style: TextButton.styleFrom(
-                      foregroundColor: PetalSoft.accent,
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                    ),
-                    child: const Text(
-                      'Sign out',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 28),
-              Text(
-                greeting.toUpperCase(),
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: PetalSoft.muted,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.8,
-                  fontSize: 12,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '$first, start with your labs',
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontFamily: PetalSoft.displayFontFamily,
-                  color: PetalSoft.ink,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 28,
-                  height: 1.15,
-                ),
-              ),
-              const SizedBox(height: 18),
-              _IdentityQuiet(
-                initial: initial,
-                name: fullName,
-                email: email,
-              ),
-              const SizedBox(height: 28),
-              Container(
-                padding: const EdgeInsets.fromLTRB(18, 20, 18, 18),
-                decoration: BoxDecoration(
-                  color: PetalSoft.surface,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: PetalSoft.accentSoft),
-                ),
+        bottom: true,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            MarkLedTopBar(
+              onSignOut: onSignOut,
+              signOutBusy: busy,
+              avatarInitial: initial,
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(22, 28, 22, 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
-                      'YOUR NEXT STEP',
+                      greeting.toUpperCase(),
                       style: theme.textTheme.labelLarge?.copyWith(
-                        color: PetalSoft.accent,
+                        color: PetalSoft.muted,
                         fontWeight: FontWeight.w600,
-                        letterSpacing: 0.7,
-                        fontSize: 11,
+                        letterSpacing: 0.8,
+                        fontSize: 12,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Upload a lab PDF',
-                      style: theme.textTheme.titleMedium?.copyWith(
+                      '$first, start with your labs',
+                      style: theme.textTheme.headlineSmall?.copyWith(
                         fontFamily: PetalSoft.displayFontFamily,
                         color: PetalSoft.ink,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 28,
+                        height: 1.15,
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Path A begins with labs, then routine, symptoms, and a '
-                      'calm match.',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: PetalSoft.muted,
-                        fontSize: 13,
-                        height: 1.45,
-                      ),
+                    const SizedBox(height: 18),
+                    _IdentityQuiet(
+                      initial: initial,
+                      name: fullName,
+                      email: email,
                     ),
-                    const SizedBox(height: 16),
-                    FilledButton(
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) => const LabUploadScreen(),
+                    const SizedBox(height: 28),
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(18, 20, 18, 18),
+                      decoration: BoxDecoration(
+                        color: PetalSoft.surface,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: PetalSoft.accentSoft),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            'YOUR NEXT STEP',
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              color: PetalSoft.accent,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.7,
+                              fontSize: 11,
+                            ),
                           ),
-                        );
-                      },
-                      child: const Text('Upload lab PDF'),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Upload a lab PDF',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontFamily: PetalSoft.displayFontFamily,
+                              color: PetalSoft.ink,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Path A begins with labs, then routine, symptoms, '
+                            'and a calm match.',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: PetalSoft.muted,
+                              fontSize: 13,
+                              height: 1.45,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          FilledButton(
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => const LabUploadScreen(),
+                                ),
+                              );
+                            },
+                            child: const Text('Upload lab PDF'),
+                          ),
+                        ],
+                      ),
                     ),
-                  ],
-                ),
-              ),
-              if (error != null) ...[
-                const SizedBox(height: 16),
-                Text(
-                  error!,
-                  style: TextStyle(color: theme.colorScheme.error),
-                ),
-              ],
-              const Spacer(),
-              Row(
-                children: [
-                  for (var i = 0; i < 4; i++) ...[
-                    if (i > 0) const SizedBox(width: 5),
-                    Expanded(
-                      child: Container(
-                        height: 4,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(999),
-                          color: i < 1
-                              ? PetalSoft.accent
-                              : PetalSoft.accentSoft,
-                        ),
+                    if (error != null) ...[
+                      const SizedBox(height: 16),
+                      Text(
+                        error!,
+                        style: TextStyle(color: theme.colorScheme.error),
+                      ),
+                    ],
+                    const Spacer(),
+                    Row(
+                      children: [
+                        for (var i = 0; i < 4; i++) ...[
+                          if (i > 0) const SizedBox(width: 5),
+                          Expanded(
+                            child: Container(
+                              height: 4,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(999),
+                                color: i < 1
+                                    ? PetalSoft.accent
+                                    : PetalSoft.accentSoft,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Path A · Labs 1 of 4',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: PetalSoft.muted,
+                        fontSize: 11,
                       ),
                     ),
                   ],
-                ],
-              ),
-              const SizedBox(height: 10),
-              Text(
-                'Path A · Labs 1 of 4',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: PetalSoft.muted,
-                  fontSize: 11,
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

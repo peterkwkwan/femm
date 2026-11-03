@@ -10,6 +10,8 @@ abstract final class PetalSoft {
   static const Color muted = Color(0xFF7A6560);
   static const Color accent = Color(0xFFB85C5C);
   static const Color accentSoft = Color(0xFFF0D9D4);
+  /// Mid bloom layer in the locked Calmness mark.
+  static const Color blush = Color(0xFFE8C4BC);
 
   /// Platform serif (Android → Noto/Droid Serif) for display headlines.
   static const String displayFontFamily = 'serif';
@@ -76,16 +78,19 @@ abstract final class PetalSoft {
         ),
       ),
       appBarTheme: const AppBarTheme(
-        backgroundColor: bg,
+        backgroundColor: surface,
         foregroundColor: ink,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
+        toolbarHeight: 64,
         titleTextStyle: TextStyle(
           fontFamily: displayFontFamily,
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-          color: accent,
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+          color: ink,
+          letterSpacing: 1.28, // 0.08em at 16px
+          height: 1,
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(

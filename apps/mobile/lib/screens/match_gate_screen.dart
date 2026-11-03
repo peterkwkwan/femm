@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/path_a_session.dart';
 import '../services/intake_service.dart';
 import '../theme/petal_soft.dart';
+import '../widgets/mark_led_app_bar.dart';
 import '../widgets/path_a_step_header.dart';
 import 'match_screen.dart';
 import 'spend_screen.dart';
@@ -103,7 +104,7 @@ class _MatchGateScreenState extends State<MatchGateScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       backgroundColor: PetalSoft.bg,
-      appBar: AppBar(title: const Text('femm')),
+      appBar: const MarkLedAppBar(),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

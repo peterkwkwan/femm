@@ -4,6 +4,7 @@ import '../models/path_a_session.dart';
 import '../models/spend_bucket.dart';
 import '../services/intake_service.dart';
 import '../theme/petal_soft.dart';
+import '../widgets/mark_led_app_bar.dart';
 import '../widgets/path_a_step_header.dart';
 import 'symptoms_screen.dart';
 
@@ -83,7 +84,7 @@ class _SpendScreenState extends State<SpendScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('femm')),
+      appBar: const MarkLedAppBar(),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 
 import '../services/lab_service.dart';
 import '../theme/petal_soft.dart';
+import '../widgets/mark_led_app_bar.dart';
 import '../widgets/path_a_step_header.dart';
 import 'lab_confirm_screen.dart';
 
@@ -114,22 +115,7 @@ class _LabUploadScreenState extends State<LabUploadScreen> {
 
     return Scaffold(
       backgroundColor: PetalSoft.bg,
-      appBar: AppBar(
-        title: const Text('femm'),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: Center(
-              child: Text(
-                'Path A',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: PetalSoft.muted,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+      appBar: const MarkLedAppBar(),
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

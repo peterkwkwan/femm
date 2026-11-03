@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme/petal_soft.dart';
 import 'deep_accent_dusk_hills.dart';
 import 'google_g_mark.dart';
+import 'mark_led_app_bar.dart';
 
 const String kWelcomeHelperCopy =
     'After your health check or labs, we route you toward recovery care that fits.';
@@ -44,19 +45,10 @@ class DeepAccentDuskWelcome extends StatelessWidget {
             child: const DeepAccentDuskHills(),
           ),
           Positioned(
-            top: topInset + 12,
-            left: 22,
-            child: const Text(
-              'femm',
-              style: TextStyle(
-                // Solid ink — do not inherit theme/accent tint via copyWith.
-                color: Color(0xFF2A1F1C),
-                fontWeight: FontWeight.w700,
-                fontSize: 24,
-                height: 1,
-                letterSpacing: -0.4,
-              ),
-            ),
+            top: topInset,
+            left: 0,
+            right: 0,
+            child: const MarkLedTopBar(),
           ),
           Positioned(
             left: 24,

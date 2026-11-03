@@ -4,6 +4,7 @@ import '../models/lab_biomarker.dart';
 import '../services/intake_service.dart';
 import '../services/lab_service.dart';
 import '../theme/petal_soft.dart';
+import '../widgets/mark_led_app_bar.dart';
 import '../widgets/path_a_step_header.dart';
 import 'spend_screen.dart';
 
@@ -134,9 +135,7 @@ class _LabConfirmScreenState extends State<LabConfirmScreen> {
     final visible = _visible;
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('femm'),
-      ),
+      appBar: const MarkLedAppBar(),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

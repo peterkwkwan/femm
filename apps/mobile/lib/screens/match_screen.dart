@@ -9,6 +9,7 @@ import '../models/path_a_session.dart';
 import '../models/spend_bucket.dart';
 import '../services/match_service.dart';
 import '../theme/petal_soft.dart';
+import '../widgets/mark_led_app_bar.dart';
 import '../widgets/path_a_step_header.dart';
 
 /// Unified Match · step 4 of 4 — Sheet stack (Petal Soft).
@@ -331,7 +332,7 @@ class _MatchScreenState extends State<MatchScreen>
     final theme = Theme.of(context);
     return Scaffold(
       backgroundColor: PetalSoft.bg,
-      appBar: AppBar(title: const Text('femm')),
+      appBar: const MarkLedAppBar(),
       body: Column(
         children: [
           const PathAStepHeader(step: PathAStep.match),
