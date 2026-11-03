@@ -23,7 +23,7 @@ class PathAStepHeader extends StatelessWidget {
     required this.step,
   });
 
-  /// Named Path A step (1–4). Confirm uses [PathAStep.labs]; gate+result use match.
+  /// Named Path A step (1–4). Confirm uses [PathAStep.labs]; unified Match uses match.
   final PathAStep step;
 
   static const int totalSteps = 4;

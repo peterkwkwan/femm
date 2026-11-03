@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Regression: Petal Soft FilledButton min size must not be infinite-wide
-/// inside match upsell Rows (was crashing after "See your match").
+/// inside match upsell Rows (was crashing on Sheet stack Book/Skip).
 void main() {
   testWidgets('FilledButton theme has finite minimum width', (tester) async {
     late Size? minSize;
