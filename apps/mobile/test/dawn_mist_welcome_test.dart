@@ -63,7 +63,14 @@ void main() {
         PetalSoft.welcomeTrackingEm,
       ),
     );
-    expect(find.text(kWelcomeHelperCopy), findsOneWidget);
+    expect(
+      kWelcomeHelperCopy,
+      'Your journey to recovery starts here.',
+    );
+    expect(
+      find.text('Your journey to recovery starts here.'),
+      findsOneWidget,
+    );
     expect(find.text('Continue with Google'), findsOneWidget);
     expect(find.byType(DawnMistAtmosphere), findsOneWidget);
     expect(find.text('Get started'), findsNothing);

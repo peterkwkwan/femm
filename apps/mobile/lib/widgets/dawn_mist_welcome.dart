@@ -6,7 +6,7 @@ import 'dawn_mist_atmosphere.dart';
 import 'google_g_mark.dart';
 
 const String kWelcomeHelperCopy =
-    'After your health check or labs, we route you toward recovery care that fits.';
+    'Your journey to recovery starts here.';
 
 /// Dawn Mist login — centered Calmness + Cormorant Soft femm, mist wash,
 /// bottom Welcome + full-width soft Continue with Google.
