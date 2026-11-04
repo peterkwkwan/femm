@@ -33,4 +33,31 @@ void main() {
     expect(find.text('Camera isn’t wired in this prototype.'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('Use demo PDF shows spinner during fake load', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: PetalSoft.theme(),
+        home: const LabUploadScreen(
+          labService: null,
+          demoPdfLoadDelay: Duration(seconds: 2),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text('Use demo PDF instead'));
+    await tester.pump();
+
+    expect(find.text('Use demo PDF instead'), findsNothing);
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+    // Dispose before the delay ends so asset load / upload never runs.
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(seconds: 2));
+    expect(tester.takeException(), isNull);
+  });
 }

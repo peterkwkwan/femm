@@ -22,6 +22,9 @@ const bool kInvestorDemoBypassAuth = true;
 /// Artificial delay while the Google CTA shows its loading spinner.
 const Duration kInvestorDemoSignInDelay = Duration(seconds: 2);
 
+/// Artificial delay while "Use demo PDF instead" shows its loading spinner.
+const Duration kInvestorDemoPdfLoadDelay = Duration(seconds: 2);
+
 /// Display name shown on signed-in home greeting during the investor pitch.
 const String kInvestorDemoDisplayName = 'Sally';
 

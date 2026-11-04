@@ -13,6 +13,7 @@ void main() {
     test('flag is on for the pitch (flip false after)', () {
       expect(kInvestorDemoBypassAuth, isTrue);
       expect(kInvestorDemoSignInDelay, const Duration(seconds: 2));
+      expect(kInvestorDemoPdfLoadDelay, const Duration(seconds: 2));
       expect(kInvestorDemoUserId, 'investor-demo-user');
     });
 

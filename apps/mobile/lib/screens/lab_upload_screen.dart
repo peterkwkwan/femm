@@ -2,6 +2,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../config/investor_demo_auth.dart';
 import '../services/lab_service.dart';
 import '../theme/petal_soft.dart';
 import '../widgets/mark_led_app_bar.dart';
@@ -10,9 +11,16 @@ import 'lab_confirm_screen.dart';
 
 /// Path A Labs step — stacked Upload PDF / Take a photo action cards.
 class LabUploadScreen extends StatefulWidget {
-  const LabUploadScreen({super.key, this.labService});
+  const LabUploadScreen({
+    super.key,
+    this.labService,
+    this.demoPdfLoadDelay = kInvestorDemoPdfLoadDelay,
+  });
 
   final LabService? labService;
+
+  /// Fake button-load pause before the synthetic demo PDF is applied.
+  final Duration demoPdfLoadDelay;
 
   /// Footer helper under the Labs chooser.
   static const String storageHelperCopy =
@@ -89,13 +97,29 @@ class _LabUploadScreenState extends State<LabUploadScreen> {
 
   Future<void> _useDemoPdf() async {
     if (_busy) return;
-    final data = await rootBundle.load(
-      'assets/labs/synthetic-hk-womens-panel.pdf',
-    );
-    await _runUpload(
-      bytes: data.buffer.asUint8List(),
-      filename: 'synthetic-hk-womens-panel.pdf',
-    );
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      // Same spirit as investor fake Google CTA: brief button spinner, then proceed.
+      await Future<void>.delayed(widget.demoPdfLoadDelay);
+      if (!mounted) return;
+      final data = await rootBundle.load(
+        'assets/labs/synthetic-hk-womens-panel.pdf',
+      );
+      if (!mounted) return;
+      await _runUpload(
+        bytes: data.buffer.asUint8List(),
+        filename: 'synthetic-hk-womens-panel.pdf',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = LabService.userFacingError(e);
+        _busy = false;
+      });
+    }
   }
 
   void _onTakePhotoDummy() {
@@ -191,12 +215,21 @@ class _LabUploadScreenState extends State<LabUploadScreen> {
               const Spacer(),
               TextButton(
                 onPressed: _busy ? null : _useDemoPdf,
-                child: Text(
-                  'Use demo PDF instead',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: PetalSoft.muted,
-                  ),
-                ),
+                child: _busy && !hasSelection
+                    ? const SizedBox(
+                        height: 16,
+                        width: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: PetalSoft.muted,
+                        ),
+                      )
+                    : Text(
+                        'Use demo PDF instead',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: PetalSoft.muted,
+                        ),
+                      ),
               ),
               Text(
                 LabUploadScreen.storageHelperCopy,
