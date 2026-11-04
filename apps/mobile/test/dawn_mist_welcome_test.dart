@@ -88,4 +88,33 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+      'Dawn Mist busy: Google CTA swaps label for loading (bypass delay UI)',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    var tapped = false;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: PetalSoft.theme(),
+        home: DawnMistWelcome(
+          busy: true,
+          error: null,
+          usingPlaceholders: false,
+          onGoogleSignIn: () => tapped = true,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Continue with Google'), findsNothing);
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+    // CTA is disabled while busy — investor-demo 2s delay uses this state.
+    await tester.tap(find.byType(InkWell));
+    await tester.pump();
+    expect(tapped, isFalse);
+  });
 }

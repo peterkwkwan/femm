@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'config/investor_demo_auth.dart';
 import 'config/supabase_config.dart';
 import 'screens/signed_in_home.dart';
 import 'services/auth_service.dart';
@@ -44,6 +45,9 @@ class _AuthGateState extends State<AuthGate> {
   String? _error;
   bool _busy = false;
 
+  /// TEMP / investor-demo stub session when [kInvestorDemoBypassAuth] is on.
+  User? _demoUser;
+
   Future<void> _run(Future<void> Function() action) async {
     setState(() {
       _busy = true;
@@ -68,28 +72,49 @@ class _AuthGateState extends State<AuthGate> {
     }
   }
 
+  Future<void> _onGoogleSignIn() async {
+    final stub = await maybeBypassGoogleSignIn(
+      realSignIn: _authService.signInWithGoogle,
+    );
+    if (stub != null && mounted) {
+      setState(() {
+        _demoUser = stub;
+      });
+    }
+  }
+
+  Future<void> _onSignOut() async {
+    if (_demoUser != null) {
+      // TEMP / investor-demo: clear stub only — no Google / Supabase sign-out.
+      setState(() {
+        _demoUser = null;
+      });
+      return;
+    }
+    await _authService.signOut();
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<AuthState>(
       stream: _authService.authStateChanges,
       builder: (context, snapshot) {
         final session = snapshot.data?.session ?? _authService.currentSession;
-        final user = session?.user ?? _authService.currentUser;
+        final user =
+            _demoUser ?? session?.user ?? _authService.currentUser;
         if (user != null) {
           return SignedInShell(
             user: user,
             busy: _busy,
             error: _error,
-            onSignOut: () => _run(_authService.signOut),
+            onSignOut: () => _run(_onSignOut),
           );
         }
         return SignInShell(
           busy: _busy,
           error: _error,
           usingPlaceholders: !SupabaseConfig.hasRealProject,
-          onGoogleSignIn: () => _run(() async {
-            await _authService.signInWithGoogle();
-          }),
+          onGoogleSignIn: () => _run(_onGoogleSignIn),
         );
       },
     );
