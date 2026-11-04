@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../config/investor_demo_auth.dart';
 import '../models/path_a_session.dart';
 import '../models/spend_bucket.dart';
 import '../models/symptom_chip.dart';
@@ -14,16 +15,39 @@ class IntakeService {
   final SupabaseClient _client;
   final MatchEngine _matchEngine;
 
-  String get _uid {
-    final id = _client.auth.currentUser?.id;
-    if (id == null) {
-      throw StateError('Not signed in');
-    }
-    return id;
+  /// TEMP / investor-demo: in-memory sessions when there is no Supabase JWT.
+  /// Static so Path A screens that recreate [IntakeService] still share state.
+  static final Map<String, PathASession> _demoSessionsById =
+      <String, PathASession>{};
+  static final Map<String, String> _demoSessionIdByLabDoc = <String, String>{};
+
+  /// Test / reset helper for the investor-demo in-memory store.
+  static void clearInvestorDemoStore() {
+    _demoSessionsById.clear();
+    _demoSessionIdByLabDoc.clear();
+    clearInvestorDemoLabConfirmStore();
   }
+
+  bool get _offline => isInvestorDemoOffline(_client);
+
+  String get _uid => resolveDemoOrAuthUserId(_client);
 
   /// Ensure a session row exists for this confirmed lab document.
   Future<PathASession> ensureSessionForLab({required String labDocumentId}) async {
+    if (_offline) {
+      final existingId = _demoSessionIdByLabDoc[labDocumentId];
+      if (existingId != null) {
+        final existing = _demoSessionsById[existingId];
+        if (existing != null) return existing;
+      }
+      // Confirm labs is local offline — treat ensure as confirm+session.
+      markInvestorDemoLabConfirmed(labDocumentId);
+      final session = buildInvestorDemoSession(labDocumentId: labDocumentId);
+      _demoSessionsById[session.id] = session;
+      _demoSessionIdByLabDoc[labDocumentId] = session.id;
+      return session;
+    }
+
     final uid = _uid;
     final existing = await _client
         .from('path_a_sessions')
@@ -49,6 +73,11 @@ class IntakeService {
   }
 
   Future<PathASession?> fetchLatestSession() async {
+    if (_offline) {
+      if (_demoSessionsById.isEmpty) return null;
+      return _demoSessionsById.values.last;
+    }
+
     final uid = _uid;
     final row = await _client
         .from('path_a_sessions')
@@ -62,6 +91,10 @@ class IntakeService {
   }
 
   Future<PathASession?> fetchSession(String sessionId) async {
+    if (_offline) {
+      return _demoSessionsById[sessionId];
+    }
+
     final uid = _uid;
     final row = await _client
         .from('path_a_sessions')
@@ -81,6 +114,24 @@ class IntakeService {
     if (buckets.isEmpty) {
       throw ArgumentError('Select at least one spend category');
     }
+
+    if (_offline) {
+      final prior = _demoSessionsById[sessionId];
+      if (prior == null) {
+        throw StateError('Session missing after spend save');
+      }
+      final updated = PathASession(
+        id: prior.id,
+        labDocumentId: prior.labDocumentId,
+        spendCompletedAt: DateTime.now().toUtc(),
+        surveyCompletedAt: prior.surveyCompletedAt,
+        spendBuckets: buckets.toList(),
+        surveyAnswers: prior.surveyAnswers,
+      );
+      _demoSessionsById[sessionId] = updated;
+      return updated;
+    }
+
     final uid = _uid;
     final now = DateTime.now().toUtc().toIso8601String();
 
@@ -151,6 +202,23 @@ class IntakeService {
     provisionalAnswers[kPrimaryGoalAnswerKey] =
         primaryGoalForSpecialty(recommendation.specialty);
 
+    if (_offline) {
+      final prior = _demoSessionsById[sessionId];
+      if (prior == null) {
+        throw StateError('Session missing after symptoms save');
+      }
+      final updated = PathASession(
+        id: prior.id,
+        labDocumentId: prior.labDocumentId,
+        spendCompletedAt: prior.spendCompletedAt,
+        surveyCompletedAt: DateTime.now().toUtc(),
+        spendBuckets: prior.spendBuckets,
+        surveyAnswers: provisionalAnswers,
+      );
+      _demoSessionsById[sessionId] = updated;
+      return updated;
+    }
+
     final uid = _uid;
     final now = DateTime.now().toUtc().toIso8601String();
 
@@ -195,6 +263,10 @@ class IntakeService {
 
   /// Labs must be confirmed before match (Phase 3.3 gate).
   Future<bool> labsConfirmedForSession(PathASession session) async {
+    if (_offline) {
+      return isInvestorDemoLabConfirmed(session.labDocumentId);
+    }
+
     final uid = _uid;
     final row = await _client
         .from('lab_documents')

@@ -42,11 +42,15 @@ Use **two Google accounts**: Account A = Flutter user, Account B = practitioner 
 ### Path A — user (Account A, ~5–6 min)
 
 1. **Sign in** with Google (Account A).
+   - **TEMP investor pitch bypass (2026-11-04):** Dawn Mist Google CTA does **not** run OAuth. It shows ~2s loading then opens signed-in home as **Sally** (`buildInvestorDemoStubUser` / `kInvestorDemoBypassAuth` in `apps/mobile/lib/config/investor_demo_auth.dart`). Flip the flag to `false` after the pitch to restore real Google → Supabase auth.
 2. **Upload lab PDF** → pick `fixtures/labs/synthetic-hk-womens-panel.pdf` (or the asset copy under `apps/mobile/assets/labs/`).
+   - **TEMP:** while `kInvestorDemoBypassAuth` is true, lab upload does **not** show “You're signed out…” — LabService uses a local extract stub (no Storage JWT).
 3. Wait for extract → **confirm labs** (edit optional; keep H/L flags as shown).
+   - **TEMP:** Confirm → spend does **not** throw `Not signed in` — IntakeService keeps an in-memory Path A session (`resolveDemoOrAuthUserId` / `buildInvestorDemoSession`).
 4. **Spend** → **STEP 1 OF 3 · SPEND**; select ≥1 bucket (demo tip: pick 2–3 so upsell cards appear).
 5. **Symptoms** → **STEP 2 OF 3 · SYMPTOMS**; tap chips that fit (selected chips drive specialty weights).
 6. **Open match gate** → **STEP 3 OF 3 · MATCH** → **Start match**.
+   - **TEMP:** match gate labs-confirmed check and MatchService `_uid` / clinic / partner / hold / confirm / upsell paths use local stubs (seed-mirrored clinics + prototype hold) so clinical confirm and extras complete without a Supabase JWT.
 7. Match screen shows:
    - Clinical specialty + clinic + **Why this match**
    - **Hold expires in MM:SS** (~15:00)
@@ -54,6 +58,8 @@ Use **two Google accounts**: Account A = Flutter user, Account B = practitioner 
    - Sticky disclaimer at bottom
 8. Optionally **Book** / **Skip** partners (independent of clinical).
 9. **Confirm clinical booking**.
+
+**TEMP restore:** flip `kInvestorDemoBypassAuth` to `false` once — restores OAuth, Storage upload, Intake/Match RPCs, and signed-out copy everywhere.
 
 ### Path C — practitioner (Account B, ~2–3 min)
 
@@ -99,7 +105,7 @@ Locked rule: sticky on match + Path C summary; one-line on every Path C pack. Co
 This environment has no Flutter SDK / emulator. Peter (or CI with Android) should smoke once before a live demo:
 
 1. Fresh install: uninstall `com.femm.femm_app` if present → `flutter run --dart-define-from-file=dart_defines.json`.
-2. Google Auth succeeds (debug SHA-1 + Android OAuth client).
+2. Google Auth succeeds (debug SHA-1 + Android OAuth client) — **or**, while `kInvestorDemoBypassAuth` is true (investor pitch TEMP, 2026-11-04), Confirm Google CTA → ~2s spinner → signed-in home as **Sally** with no OAuth call; **full Path A** (upload → confirm → spend → symptoms → match → clinical confirm → extras) runs on local stubs without a Supabase JWT; restore real Auth + live services after pitch by flipping the flag.
 3. Full happy path from §6.1 on **one** physical device or emulator.
 4. Optional hold spot-check: open match → wait for expire (or set `held_until` / `hold_expires_at` past in SQL) → re-hold → confirm.
 5. Portal Path C on the same machine while Flutter stays signed in as Account A.

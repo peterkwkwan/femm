@@ -27,18 +27,12 @@ class LabService {
 
   /// TEMP / investor-demo: stub home has no Supabase session — skip signed-out
   /// upload gates and use [buildInvestorDemoLabExtract] instead of Storage.
-  bool get _investorDemoLocalLabs =>
-      kInvestorDemoBypassAuth && _client.auth.currentSession == null;
+  bool get _investorDemoLocalLabs => isInvestorDemoOffline(_client);
 
-  String get _uid {
-    final id = _client.auth.currentUser?.id;
-    if (id != null) return id;
-    // TEMP / investor-demo: allow Path A upload UI without a real session.
-    if (kInvestorDemoBypassAuth) {
-      return buildInvestorDemoStubUser().id;
-    }
-    throw StateError(signedOutMessage);
-  }
+  String get _uid => resolveDemoOrAuthUserId(
+        _client,
+        signedOutMessage: signedOutMessage,
+      );
 
   /// True when Storage rejected the request because the JWT `exp` claim is stale.
   static bool isExpiredJwtStorageError(Object error) {
@@ -198,6 +192,12 @@ class LabService {
   }
 
   Future<LabDocument?> fetchDocument(String documentId) async {
+    if (_investorDemoLocalLabs && documentId == kInvestorDemoLabDocumentId) {
+      final extract = buildInvestorDemoLabExtract(
+        originalFilename: 'synthetic-hk-womens-panel.pdf',
+      );
+      return extract.document;
+    }
     final row = await _client
         .from('lab_documents')
         .select()
@@ -208,6 +208,11 @@ class LabService {
   }
 
   Future<List<LabBiomarker>> fetchBiomarkers(String documentId) async {
+    if (_investorDemoLocalLabs && documentId == kInvestorDemoLabDocumentId) {
+      return buildInvestorDemoLabExtract(
+        originalFilename: 'synthetic-hk-womens-panel.pdf',
+      ).biomarkers;
+    }
     final rows = await _client
         .from('lab_biomarker_rows')
         .select()
@@ -224,8 +229,9 @@ class LabService {
     required String documentId,
     required List<LabBiomarker> rows,
   }) async {
-    // TEMP / investor-demo: confirm is a no-op without a real session.
+    // TEMP / investor-demo: confirm is local — mark demo store, no Storage write.
     if (_investorDemoLocalLabs) {
+      markInvestorDemoLabConfirmed(documentId);
       return;
     }
 

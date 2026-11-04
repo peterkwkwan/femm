@@ -1,4 +1,8 @@
 import 'package:femm_app/config/investor_demo_auth.dart';
+import 'package:femm_app/models/clinical_specialty.dart';
+import 'package:femm_app/models/spend_bucket.dart';
+import 'package:femm_app/services/intake_service.dart';
+import 'package:femm_app/services/match_service.dart';
 import 'package:femm_app/theme/petal_soft.dart';
 import 'package:femm_app/widgets/dawn_mist_welcome.dart';
 import 'package:flutter/material.dart';
@@ -9,11 +13,12 @@ void main() {
     test('flag is on for the pitch (flip false after)', () {
       expect(kInvestorDemoBypassAuth, isTrue);
       expect(kInvestorDemoSignInDelay, const Duration(seconds: 2));
+      expect(kInvestorDemoUserId, 'investor-demo-user');
     });
 
     test('stub user greets as Sally on signed-in home', () {
       final user = buildInvestorDemoStubUser();
-      expect(user.id, 'investor-demo-user');
+      expect(user.id, kInvestorDemoUserId);
       expect(user.email, 'sally@femm.app');
       expect(user.userMetadata?['full_name'], 'Sally');
       expect(user.userMetadata?['name'], kInvestorDemoDisplayName);
@@ -24,7 +29,7 @@ void main() {
       final extract = buildInvestorDemoLabExtract(
         originalFilename: 'synthetic-hk-womens-panel.pdf',
       );
-      expect(extract.document.id, 'investor-demo-lab-document');
+      expect(extract.document.id, kInvestorDemoLabDocumentId);
       expect(extract.document.originalFilename, 'synthetic-hk-womens-panel.pdf');
       expect(extract.document.status, 'extracted');
       expect(extract.biomarkers, isNotEmpty);
@@ -67,6 +72,79 @@ void main() {
       );
       expect(realCalled, isTrue);
       expect(stub, isNull);
+    });
+  });
+
+  group('investor demo full-path stubs', () {
+    setUp(IntakeService.clearInvestorDemoStore);
+
+    test('demo session stub is ready after spend + symptoms stamps', () {
+      final session = buildInvestorDemoSession(
+        spendCompletedAt: DateTime.utc(2026, 11, 4),
+        surveyCompletedAt: DateTime.utc(2026, 11, 4),
+        spendBuckets: const [SpendBucket.supplements],
+        surveyAnswers: const {'hot_flushes': 'Hot flushes'},
+      );
+      expect(session.id, kInvestorDemoSessionId);
+      expect(session.labDocumentId, kInvestorDemoLabDocumentId);
+      expect(session.hasSpend, isTrue);
+      expect(session.hasSurvey, isTrue);
+      expect(session.readyForMatch, isTrue);
+    });
+
+    test('demo clinics cover every clinical specialty (seed mirror)', () {
+      for (final specialty in ClinicalSpecialty.values) {
+        final clinic = buildInvestorDemoClinic(specialty);
+        expect(clinic.specialty, specialty);
+        expect(clinic.name, isNotEmpty);
+        expect(clinic.id, startsWith('11111111-'));
+      }
+    });
+
+    test('demo upsell partners cover every spend bucket', () {
+      final partners = investorDemoUpsellPartners();
+      expect(partners, hasLength(SpendBucket.values.length));
+      final buckets = partners.map((p) => p.spendBucketDb).toSet();
+      for (final bucket in SpendBucket.values) {
+        expect(buckets, contains(bucket.dbValue));
+      }
+    });
+
+    test('partnersForSpend filters and preserves spend order', () {
+      final partners = investorDemoPartnersForSpend(const [
+        SpendBucket.mentalHealth,
+        SpendBucket.skincareAesthetics,
+      ]);
+      expect(partners, hasLength(2));
+      expect(partners[0].spendBucketDb, SpendBucket.mentalHealth.dbValue);
+      expect(partners[1].spendBucketDb, SpendBucket.skincareAesthetics.dbValue);
+    });
+
+    test('lab confirm store gates match readiness offline', () {
+      clearInvestorDemoLabConfirmStore();
+      expect(isInvestorDemoLabConfirmed('other-doc'), isFalse);
+      markInvestorDemoLabConfirmed('other-doc');
+      expect(isInvestorDemoLabConfirmed('other-doc'), isTrue);
+      // Default demo lab id is always treated as confirmable for the pitch.
+      expect(isInvestorDemoLabConfirmed(kInvestorDemoLabDocumentId), isTrue);
+    });
+
+    test('prototype hold + confirm stubs complete clinical booking offline', () {
+      final clinic =
+          buildInvestorDemoClinic(ClinicalSpecialty.boneHeartRisk);
+      final hold = MatchService.buildPrototypeHold(
+        sessionId: kInvestorDemoSessionId,
+        specialty: ClinicalSpecialty.boneHeartRisk,
+        whyCopy: 'Demo why',
+        clinic: clinic,
+      );
+      expect(MatchService.isPrototypeSlotId(hold.slotId), isTrue);
+      expect(hold.hasActiveHold, isTrue);
+
+      final booking = MatchService.confirmPrototypeHold(hold);
+      expect(booking.sessionId, kInvestorDemoSessionId);
+      expect(booking.clinicId, clinic.id);
+      expect(MatchService.isPrototypeSlotId(booking.slotId), isTrue);
     });
   });
 

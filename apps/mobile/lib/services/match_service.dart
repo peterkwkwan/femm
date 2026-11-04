@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../config/investor_demo_auth.dart';
 import '../models/clinic.dart';
 import '../models/clinical_specialty.dart';
 import '../models/lab_biomarker.dart';
@@ -27,6 +28,11 @@ class MatchService {
   /// Lets the prototype reach held / confirm UI without resetting seed.
   PathAMatch? _prototypeMatch;
   ClinicalBooking? _prototypeClinical;
+
+  /// TEMP / investor-demo: local upsell bookings when offline.
+  final List<UpsellBooking> _prototypeUpsells = <UpsellBooking>[];
+
+  bool get _offline => isInvestorDemoOffline(_client);
 
   /// Slot ids synthesized by [buildPrototypeHold] (not rows in `appointment_slots`).
   static const String prototypeSlotIdPrefix = 'prototype-slot-';
@@ -85,19 +91,18 @@ class MatchService {
     );
   }
 
-  String get _uid {
-    final id = _client.auth.currentUser?.id;
-    if (id == null) {
-      throw StateError('Not signed in');
-    }
-    return id;
-  }
+  String get _uid => resolveDemoOrAuthUserId(_client);
 
   Future<void> releaseExpiredHolds() async {
+    // TEMP / investor-demo: no RPC without a real session.
+    if (_offline) return;
     await _client.rpc('release_expired_slot_holds');
   }
 
   Future<Clinic> fetchClinicBySpecialty(ClinicalSpecialty specialty) async {
+    if (_offline) {
+      return buildInvestorDemoClinic(specialty);
+    }
     final row = await _client
         .from('clinics')
         .select()
@@ -107,6 +112,13 @@ class MatchService {
   }
 
   Future<Clinic?> fetchClinic(String clinicId) async {
+    if (_offline) {
+      for (final s in ClinicalSpecialty.values) {
+        final clinic = buildInvestorDemoClinic(s);
+        if (clinic.id == clinicId) return clinic;
+      }
+      return _prototypeMatch?.clinic;
+    }
     final row = await _client
         .from('clinics')
         .select()
@@ -117,6 +129,10 @@ class MatchService {
   }
 
   Future<AppointmentSlot?> fetchSlot(String slotId) async {
+    if (_offline) {
+      if (_prototypeMatch?.slotId == slotId) return _prototypeMatch?.slot;
+      return null;
+    }
     final row = await _client
         .from('appointment_slots')
         .select()
@@ -128,6 +144,7 @@ class MatchService {
 
   /// Next bookable slot for clinic: available, or held by current user, soonest start.
   Future<AppointmentSlot?> nextHoldableSlot(String clinicId) async {
+    if (_offline) return null;
     await releaseExpiredHolds();
     final uid = _uid;
     final rows = await _client
@@ -159,6 +176,9 @@ class MatchService {
   Future<List<UpsellPartner>> partnersForSpend(
     List<SpendBucket> buckets,
   ) async {
+    if (_offline) {
+      return investorDemoPartnersForSpend(buckets);
+    }
     if (buckets.isEmpty) return const <UpsellPartner>[];
     final keys = buckets.map((b) => b.dbValue).toList();
     final keySet = keys.toSet();
@@ -181,6 +201,7 @@ class MatchService {
     if (stub != null && stub.sessionId == sessionId) {
       return stub;
     }
+    if (_offline) return null;
     final uid = _uid;
     final row = await _client
         .from('path_a_matches')
@@ -204,6 +225,7 @@ class MatchService {
     if (stubBooking != null && stubBooking.sessionId == sessionId) {
       return stubBooking;
     }
+    if (_offline) return null;
     final uid = _uid;
     final row = await _client
         .from('clinical_bookings')
@@ -216,6 +238,11 @@ class MatchService {
   }
 
   Future<List<UpsellBooking>> fetchUpsellBookings(String sessionId) async {
+    if (_offline) {
+      return _prototypeUpsells
+          .where((b) => b.sessionId == sessionId)
+          .toList();
+    }
     final uid = _uid;
     final rows = await _client
         .from('upsell_bookings')
@@ -311,6 +338,11 @@ class MatchService {
       return (match: existing, clinical: null);
     }
 
+    // TEMP / investor-demo offline: engine + local clinic + prototype hold.
+    if (_offline) {
+      return _startOfflinePrototypeMatch(session);
+    }
+
     final biomarkers = await _labService.fetchBiomarkers(session.labDocumentId);
     final flaggedOnly = biomarkers
         .where((b) => !b.isDeleted && b.flag != null)
@@ -361,6 +393,39 @@ class MatchService {
     );
   }
 
+  Future<({PathAMatch match, ClinicalBooking? clinical})>
+      _startOfflinePrototypeMatch(PathASession session) async {
+    List<LabBiomarker> biomarkers;
+    if (session.labDocumentId == kInvestorDemoLabDocumentId) {
+      biomarkers = buildInvestorDemoLabExtract(
+        originalFilename: 'synthetic-hk-womens-panel.pdf',
+      ).biomarkers;
+    } else {
+      try {
+        biomarkers = await _labService.fetchBiomarkers(session.labDocumentId);
+      } catch (_) {
+        biomarkers = const <LabBiomarker>[];
+      }
+    }
+    final flaggedOnly = biomarkers
+        .where((b) => !b.isDeleted && b.flag != null)
+        .toList();
+    final recommendation = _engine.recommend(
+      surveyAnswers: session.surveyAnswers,
+      biomarkers: flaggedOnly,
+    );
+    final clinic = buildInvestorDemoClinic(recommendation.specialty);
+    final stub = buildPrototypeHold(
+      sessionId: session.id,
+      specialty: recommendation.specialty,
+      whyCopy: recommendation.whyCopy,
+      clinic: clinic,
+    );
+    _prototypeMatch = stub;
+    _prototypeClinical = null;
+    return (match: stub, clinical: null);
+  }
+
   Future<ClinicalBooking> confirmClinical(String sessionId) async {
     final stub = _prototypeMatch;
     if (stub != null &&
@@ -381,6 +446,10 @@ class MatchService {
       return booking;
     }
 
+    if (_offline) {
+      throw StateError('No active prototype hold to confirm');
+    }
+
     final result = await _client.rpc(
       'confirm_clinical_booking',
       params: <String, dynamic>{'p_session_id': sessionId},
@@ -392,6 +461,28 @@ class MatchService {
     required String sessionId,
     required String partnerId,
   }) async {
+    if (_offline) {
+      final partner = investorDemoUpsellPartners()
+          .where((p) => p.id == partnerId)
+          .firstOrNull;
+      if (partner == null) {
+        throw StateError('Unknown demo partner: $partnerId');
+      }
+      final existing = _prototypeUpsells
+          .where((b) => b.sessionId == sessionId && b.partnerId == partnerId)
+          .firstOrNull;
+      if (existing != null) return existing;
+      final booking = UpsellBooking(
+        id: 'prototype-upsell-$sessionId-$partnerId',
+        sessionId: sessionId,
+        partnerId: partnerId,
+        spendBucketDb: partner.spendBucketDb,
+        bookedAt: DateTime.now().toUtc(),
+      );
+      _prototypeUpsells.add(booking);
+      return booking;
+    }
+
     final result = await _client.rpc(
       'book_upsell_partner',
       params: <String, dynamic>{
