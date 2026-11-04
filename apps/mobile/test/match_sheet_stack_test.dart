@@ -159,6 +159,51 @@ void main() {
     expect(themeShape, isA<StadiumBorder>());
   });
 
+  testWidgets(
+      'Pre-booking Back to home sits in sticky footer at phone width',
+      (tester) async {
+    // Mirrors MatchScreen pre-confirm Column: scroll body + SafeArea footer.
+    const phone = Size(390, 844);
+    await tester.binding.setSurfaceSize(phone);
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: PetalSoft.theme(),
+        home: Scaffold(
+          body: Column(
+            children: [
+              const Expanded(
+                child: ColoredBox(color: Colors.white),
+              ),
+              SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 0, 18, 16),
+                  child: Align(
+                    alignment: Alignment.center,
+                    child: TextButton(
+                      key: MatchScreen.preBookBackHomeKey,
+                      onPressed: () {},
+                      child: const Text(MatchScreen.backHomeLabel),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final button = find.byKey(MatchScreen.preBookBackHomeKey);
+    expect(button, findsOneWidget);
+    final rect = tester.getRect(button);
+    expect(rect.bottom, greaterThan(phone.height * 0.85));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Share + Calendar icon buttons lay out beside clinic copy',
       (tester) async {
     await tester.pumpWidget(

@@ -48,6 +48,9 @@ class MatchScreen extends StatefulWidget {
       ValueKey<String>('match-booked-clinical-card');
   static const Key extrasSectionKey =
       ValueKey<String>('match-optional-extras');
+  /// Sticky footer TextButton on the pre-booking (hold) Match step.
+  static const Key preBookBackHomeKey =
+      ValueKey<String>('match-prebook-back-home');
 
   /// Demo doctor labels for seed clinics (not real practitioners).
   static String demoDoctorName(ClinicalSpecialty specialty) {
@@ -530,11 +533,6 @@ class _MatchScreenState extends State<MatchScreen>
                           ),
                           const SizedBox(height: 16),
                           _buildPreConfirmSheet(context),
-                          const SizedBox(height: 16),
-                          TextButton(
-                            onPressed: _goHome,
-                            child: const Text(MatchScreen.backHomeLabel),
-                          ),
                         ] else ...[
                           _buildYoureSetHeader(context),
                           const SizedBox(height: 4),
@@ -560,6 +558,23 @@ class _MatchScreenState extends State<MatchScreen>
                     ),
                   ),
           ),
+          // Pre-booking: pin Back to home to the screen bottom (spend/symptoms
+          // sticky-footer pattern). Post-confirm keeps the primary pill in-scroll.
+          if (!confirmed && !_loading)
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(18, 0, 18, 16),
+                child: Align(
+                  alignment: Alignment.center,
+                  child: TextButton(
+                    key: MatchScreen.preBookBackHomeKey,
+                    onPressed: _goHome,
+                    child: const Text(MatchScreen.backHomeLabel),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
