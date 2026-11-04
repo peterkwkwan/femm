@@ -66,9 +66,6 @@ class _LabConfirmScreenState extends State<LabConfirmScreen> {
       setState(() {
         _confirmed = true;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Labs confirmed and saved')),
-      );
       await Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(
           builder: (_) => SpendScreen(
