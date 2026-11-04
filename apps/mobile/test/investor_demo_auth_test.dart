@@ -11,12 +11,25 @@ void main() {
       expect(kInvestorDemoSignInDelay, const Duration(seconds: 2));
     });
 
-    test('stub user is enough for signed-in home identity', () {
+    test('stub user greets as Sally on signed-in home', () {
       final user = buildInvestorDemoStubUser();
       expect(user.id, 'investor-demo-user');
-      expect(user.email, 'demo@femm.app');
-      expect(user.userMetadata?['full_name'], 'Demo User');
+      expect(user.email, 'sally@femm.app');
+      expect(user.userMetadata?['full_name'], 'Sally');
+      expect(user.userMetadata?['name'], kInvestorDemoDisplayName);
       expect(user.aud, 'authenticated');
+    });
+
+    test('local lab extract stub skips Storage for pitch upload', () {
+      final extract = buildInvestorDemoLabExtract(
+        originalFilename: 'synthetic-hk-womens-panel.pdf',
+      );
+      expect(extract.document.id, 'investor-demo-lab-document');
+      expect(extract.document.originalFilename, 'synthetic-hk-womens-panel.pdf');
+      expect(extract.document.status, 'extracted');
+      expect(extract.biomarkers, isNotEmpty);
+      expect(extract.biomarkers.first.name, 'FSH');
+      expect(extract.biomarkers.first.flag, 'H');
     });
 
     test('bypass path delays then returns stub without calling OAuth',
@@ -38,7 +51,8 @@ void main() {
       expect(realCalled, isFalse);
       expect(stub, isNotNull);
       expect(stub!.id, buildInvestorDemoStubUser().id);
-      expect(stub.email, 'demo@femm.app');
+      expect(stub.email, 'sally@femm.app');
+      expect(stub.userMetadata?['full_name'], 'Sally');
     });
 
     test('real path calls sign-in and returns null (session via stream)',

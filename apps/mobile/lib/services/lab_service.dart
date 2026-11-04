@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
+import '../config/investor_demo_auth.dart';
 import '../models/lab_biomarker.dart';
 
 /// Storage upload + Edge Function extract + confirm persistence (Phase 2).
@@ -24,12 +25,19 @@ class LabService {
   /// [skewSeconds] of expiry so Storage / Edge Function JWT checks pass.
   static const int refreshSkewSeconds = 60;
 
+  /// TEMP / investor-demo: stub home has no Supabase session — skip signed-out
+  /// upload gates and use [buildInvestorDemoLabExtract] instead of Storage.
+  bool get _investorDemoLocalLabs =>
+      kInvestorDemoBypassAuth && _client.auth.currentSession == null;
+
   String get _uid {
     final id = _client.auth.currentUser?.id;
-    if (id == null) {
-      throw StateError(signedOutMessage);
+    if (id != null) return id;
+    // TEMP / investor-demo: allow Path A upload UI without a real session.
+    if (kInvestorDemoBypassAuth) {
+      return buildInvestorDemoStubUser().id;
     }
-    return id;
+    throw StateError(signedOutMessage);
   }
 
   /// True when Storage rejected the request because the JWT `exp` claim is stale.
@@ -46,7 +54,18 @@ class LabService {
   }
 
   /// Map auth / expired-JWT failures to a short user-facing line.
-  static String userFacingError(Object error) {
+  ///
+  /// When [bypassAuth] is true (investor pitch), never map to
+  /// [signedOutMessage] — the stub session has no JWT and that copy is
+  /// suppressed for the demo.
+  static String userFacingError(
+    Object error, {
+    bool bypassAuth = kInvestorDemoBypassAuth,
+  }) {
+    if (bypassAuth) {
+      if (error is StateError) return error.message;
+      return error.toString();
+    }
     if (error is StateError && error.message == signedOutMessage) {
       return signedOutMessage;
     }
@@ -68,6 +87,8 @@ class LabService {
   Future<void> ensureFreshSession({bool force = false}) async {
     final session = _client.auth.currentSession;
     if (session == null) {
+      // TEMP / investor-demo: stub auth has no JWT — skip refresh / signed-out throw.
+      if (kInvestorDemoBypassAuth) return;
       throw StateError(signedOutMessage);
     }
 
@@ -82,9 +103,11 @@ class LabService {
     try {
       final refreshed = await _client.auth.refreshSession();
       if (refreshed.session == null && _client.auth.currentSession == null) {
+        if (kInvestorDemoBypassAuth) return;
         throw StateError(signedOutMessage);
       }
     } on AuthException {
+      if (kInvestorDemoBypassAuth) return;
       throw StateError(signedOutMessage);
     }
   }
@@ -105,6 +128,7 @@ class LabService {
         if (isExpiredJwtStorageError(retryError) ||
             retryError.statusCode == '401' ||
             retryError.statusCode == '403') {
+          if (kInvestorDemoBypassAuth) rethrow;
           throw StateError(signedOutMessage);
         }
         rethrow;
@@ -118,6 +142,11 @@ class LabService {
     required Uint8List bytes,
     required String originalFilename,
   }) async {
+    // TEMP / investor-demo: no Supabase session — local extract, no Storage call.
+    if (_investorDemoLocalLabs) {
+      return buildInvestorDemoLabExtract(originalFilename: originalFilename);
+    }
+
     await ensureFreshSession();
     final uid = _uid;
     final documentId = _uuid.v4();
@@ -195,6 +224,11 @@ class LabService {
     required String documentId,
     required List<LabBiomarker> rows,
   }) async {
+    // TEMP / investor-demo: confirm is a no-op without a real session.
+    if (_investorDemoLocalLabs) {
+      return;
+    }
+
     await ensureFreshSession();
     final uid = _uid;
     final now = DateTime.now().toUtc().toIso8601String();
