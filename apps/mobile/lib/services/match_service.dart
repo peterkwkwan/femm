@@ -23,6 +23,68 @@ class MatchService {
   final MatchEngine _engine;
   final LabService _labService;
 
+  /// In-memory hold when Phase 1 demo supply has no holdable slots.
+  /// Lets the prototype reach held / confirm UI without resetting seed.
+  PathAMatch? _prototypeMatch;
+  ClinicalBooking? _prototypeClinical;
+
+  /// Slot ids synthesized by [buildPrototypeHold] (not rows in `appointment_slots`).
+  static const String prototypeSlotIdPrefix = 'prototype-slot-';
+
+  static bool isPrototypeSlotId(String? slotId) =>
+      slotId != null && slotId.startsWith(prototypeSlotIdPrefix);
+
+  /// Local 15-min hold for exhausted demo supply (no RPC / no seed reset).
+  static PathAMatch buildPrototypeHold({
+    required String sessionId,
+    required ClinicalSpecialty specialty,
+    required String whyCopy,
+    required Clinic clinic,
+    DateTime? now,
+  }) {
+    final clock = (now ?? DateTime.now()).toUtc();
+    final starts = clock.add(const Duration(days: 1));
+    final ends = starts.add(const Duration(minutes: 30));
+    final expires = clock.add(const Duration(minutes: 15));
+    final slot = AppointmentSlot(
+      id: '$prototypeSlotIdPrefix${clinic.id}',
+      clinicId: clinic.id,
+      startsAt: starts,
+      endsAt: ends,
+      status: 'held',
+      heldUntil: expires,
+    );
+    return PathAMatch(
+      sessionId: sessionId,
+      specialty: specialty,
+      whyCopy: whyCopy,
+      clinicId: clinic.id,
+      slotId: slot.id,
+      holdExpiresAt: expires,
+      clinic: clinic,
+      slot: slot,
+    );
+  }
+
+  /// Local clinical booking for a [buildPrototypeHold] match (no confirm RPC).
+  static ClinicalBooking confirmPrototypeHold(
+    PathAMatch stub, {
+    DateTime? bookedAt,
+  }) {
+    if (!isPrototypeSlotId(stub.slotId)) {
+      throw ArgumentError('Not a prototype hold');
+    }
+    return ClinicalBooking(
+      id: 'prototype-booking-${stub.sessionId}',
+      sessionId: stub.sessionId,
+      clinicId: stub.clinicId,
+      slotId: stub.slotId!,
+      specialty: stub.specialty,
+      whyCopy: stub.whyCopy,
+      bookedAt: (bookedAt ?? DateTime.now()).toUtc(),
+    );
+  }
+
   String get _uid {
     final id = _client.auth.currentUser?.id;
     if (id == null) {
@@ -115,6 +177,10 @@ class MatchService {
   }
 
   Future<PathAMatch?> fetchMatch(String sessionId) async {
+    final stub = _prototypeMatch;
+    if (stub != null && stub.sessionId == sessionId) {
+      return stub;
+    }
     final uid = _uid;
     final row = await _client
         .from('path_a_matches')
@@ -134,6 +200,10 @@ class MatchService {
   }
 
   Future<ClinicalBooking?> fetchClinicalBooking(String sessionId) async {
+    final stubBooking = _prototypeClinical;
+    if (stubBooking != null && stubBooking.sessionId == sessionId) {
+      return stubBooking;
+    }
     final uid = _uid;
     final row = await _client
         .from('clinical_bookings')
@@ -168,8 +238,13 @@ class MatchService {
       if (match != null) {
         return (match: match, clinical: existingBooking, holdExpired: false);
       }
-      final clinic = await fetchClinic(existingBooking.clinicId);
-      final slot = await fetchSlot(existingBooking.slotId);
+      final clinic = isPrototypeSlotId(existingBooking.slotId)
+          ? (_prototypeMatch?.clinic ??
+              await fetchClinic(existingBooking.clinicId))
+          : await fetchClinic(existingBooking.clinicId);
+      final slot = isPrototypeSlotId(existingBooking.slotId)
+          ? _prototypeMatch?.slot
+          : await fetchSlot(existingBooking.slotId);
       return (
         match: PathAMatch(
           sessionId: session.id,
@@ -208,8 +283,13 @@ class MatchService {
         return (match: match, clinical: existingBooking);
       }
       // Booking without match row (shouldn't happen) — synthesize from booking.
-      final clinic = await fetchClinic(existingBooking.clinicId);
-      final slot = await fetchSlot(existingBooking.slotId);
+      final clinic = isPrototypeSlotId(existingBooking.slotId)
+          ? (_prototypeMatch?.clinic ??
+              await fetchClinic(existingBooking.clinicId))
+          : await fetchClinic(existingBooking.clinicId);
+      final slot = isPrototypeSlotId(existingBooking.slotId)
+          ? _prototypeMatch?.slot
+          : await fetchSlot(existingBooking.slotId);
       return (
         match: PathAMatch(
           sessionId: session.id,
@@ -244,9 +324,16 @@ class MatchService {
     final clinic = await fetchClinicBySpecialty(recommendation.specialty);
     final slot = await nextHoldableSlot(clinic.id);
     if (slot == null) {
-      throw StateError(
-        'No available slots for ${clinic.name}. Reset Phase 1 demo supply.',
+      // Prototype bypass: exhausted Phase 1 supply → local hold, no seed reset.
+      final stub = buildPrototypeHold(
+        sessionId: session.id,
+        specialty: recommendation.specialty,
+        whyCopy: recommendation.whyCopy,
+        clinic: clinic,
       );
+      _prototypeMatch = stub;
+      _prototypeClinical = null;
+      return (match: stub, clinical: null);
     }
 
     final held = await _client.rpc(
@@ -260,6 +347,8 @@ class MatchService {
       },
     );
 
+    _prototypeMatch = null;
+    _prototypeClinical = null;
     final heldMap = Map<String, dynamic>.from(held as Map);
     final refreshedSlot = await fetchSlot(slot.id) ?? slot;
     return (
@@ -273,6 +362,25 @@ class MatchService {
   }
 
   Future<ClinicalBooking> confirmClinical(String sessionId) async {
+    final stub = _prototypeMatch;
+    if (stub != null &&
+        stub.sessionId == sessionId &&
+        isPrototypeSlotId(stub.slotId)) {
+      final booking = confirmPrototypeHold(stub);
+      _prototypeClinical = booking;
+      _prototypeMatch = PathAMatch(
+        sessionId: stub.sessionId,
+        specialty: stub.specialty,
+        whyCopy: stub.whyCopy,
+        clinicId: stub.clinicId,
+        slotId: stub.slotId,
+        holdExpiresAt: null,
+        clinic: stub.clinic,
+        slot: stub.slot,
+      );
+      return booking;
+    }
+
     final result = await _client.rpc(
       'confirm_clinical_booking',
       params: <String, dynamic>{'p_session_id': sessionId},
