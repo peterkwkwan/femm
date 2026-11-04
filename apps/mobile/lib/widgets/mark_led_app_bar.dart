@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme/petal_soft.dart';
 import 'calmness_mark.dart';
 
-/// Mark-Led Calmness top-nav — larger bloom, quieter Cormorant Soft femm.
+/// Mark-Led Calmness top-nav — larger bloom, quieter Cormorant Soft seasons.
 ///
 /// Locked from Calmness nav mockups. Wordmark reuses Dawn Mist Cormorant Soft
 /// italic (quieter nav scale). No path labels in the bar.
@@ -144,7 +144,7 @@ class MarkLedTopBar extends StatelessWidget {
   }
 }
 
-/// 36px Calmness mark + quieter Cormorant Soft italic femm (Dawn Mist face).
+/// 36px Calmness mark + quieter Cormorant Soft italic seasons (Dawn Mist face).
 class MarkLedLockup extends StatelessWidget {
   const MarkLedLockup({super.key});
 
@@ -156,7 +156,7 @@ class MarkLedLockup extends StatelessWidget {
         const CalmnessMark(size: 36),
         const SizedBox(width: 10),
         Text(
-          'femm',
+          'seasons',
           style: PetalSoft.wordmarkTextStyle(),
         ),
       ],

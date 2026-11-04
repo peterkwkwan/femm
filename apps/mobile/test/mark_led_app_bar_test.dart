@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   testWidgets(
-      'Mark-Led bar shows Calmness + Cormorant Soft italic femm, no path label',
+      'Mark-Led bar shows Calmness + Cormorant Soft italic seasons, no path label',
       (tester) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -23,24 +23,24 @@ void main() {
     await tester.pump();
 
     expect(find.byType(CalmnessMark), findsOneWidget);
-    expect(find.text('femm'), findsOneWidget);
-    final femm = tester.widget<Text>(find.text('femm'));
-    expect(femm.style?.fontFamily, PetalSoft.displayFontFamily);
-    expect(femm.style?.fontSize, PetalSoft.wordmarkSize);
-    expect(femm.style?.fontWeight, PetalSoft.wordmarkWeight);
-    expect(femm.style?.fontStyle, PetalSoft.wordmarkStyle);
-    expect(femm.style?.color, PetalSoft.ink);
+    expect(find.text('seasons'), findsOneWidget);
+    final seasons = tester.widget<Text>(find.text('seasons'));
+    expect(seasons.style?.fontFamily, PetalSoft.displayFontFamily);
+    expect(seasons.style?.fontSize, PetalSoft.wordmarkSize);
+    expect(seasons.style?.fontWeight, PetalSoft.wordmarkWeight);
+    expect(seasons.style?.fontStyle, PetalSoft.wordmarkStyle);
+    expect(seasons.style?.color, PetalSoft.ink);
     expect(
-      femm.style?.letterSpacing,
+      seasons.style?.letterSpacing,
       PetalSoft.letterSpacingEm(
         PetalSoft.wordmarkSize,
         PetalSoft.wordmarkTrackingEm,
       ),
     );
     // Same face as Dawn Mist login (scale differs).
-    expect(femm.style?.fontFamily, PetalSoft.majesticWordmarkTextStyle().fontFamily);
-    expect(femm.style?.fontStyle, PetalSoft.majesticWordmarkStyle);
-    expect(femm.style?.fontWeight, PetalSoft.majesticWordmarkWeight);
+    expect(seasons.style?.fontFamily, PetalSoft.majesticWordmarkTextStyle().fontFamily);
+    expect(seasons.style?.fontStyle, PetalSoft.majesticWordmarkStyle);
+    expect(seasons.style?.fontWeight, PetalSoft.majesticWordmarkWeight);
     expect(find.text('Path A'), findsNothing);
     expect(find.text('PATH A'), findsNothing);
     expect(find.text('Welcome'), findsNothing);

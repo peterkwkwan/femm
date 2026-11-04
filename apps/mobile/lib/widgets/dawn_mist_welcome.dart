@@ -8,7 +8,7 @@ import 'google_g_mark.dart';
 const String kWelcomeHelperCopy =
     'Your journey to recovery starts here.';
 
-/// Dawn Mist login — centered Calmness + Cormorant Soft femm, mist wash,
+/// Dawn Mist login — centered Calmness + Cormorant Soft seasons, mist wash,
 /// bottom Welcome + full-width soft Continue with Google.
 ///
 /// No app bar / navbar. Layout from centered-login Dawn Mist; wordmark from
@@ -115,7 +115,7 @@ class DawnMistWelcome extends StatelessWidget {
   }
 }
 
-/// Calmness bloom stacked above italic Cormorant Soft femm — centered hero.
+/// Calmness bloom stacked above italic Cormorant Soft seasons — centered hero.
 class _CenteredBrand extends StatelessWidget {
   const _CenteredBrand({
     required this.markSize,
@@ -134,7 +134,7 @@ class _CenteredBrand extends StatelessWidget {
         CalmnessMark(size: markSize),
         const SizedBox(height: 14),
         Text(
-          'femm',
+          'seasons',
           style: PetalSoft.majesticWordmarkTextStyle(size: wordSize),
         ),
       ],

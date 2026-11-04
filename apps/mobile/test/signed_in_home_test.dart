@@ -119,12 +119,12 @@ void main() {
 
     expect(find.byType(MarkLedTopBar), findsOneWidget);
     expect(find.byType(CalmnessMark), findsOneWidget);
-    expect(find.text('femm'), findsOneWidget);
-    final femm = tester.widget<Text>(find.text('femm'));
-    expect(femm.style?.fontFamily, PetalSoft.displayFontFamily);
-    expect(femm.style?.fontSize, PetalSoft.wordmarkSize);
-    expect(femm.style?.fontStyle, FontStyle.italic);
-    expect(femm.style?.fontWeight, PetalSoft.wordmarkWeight);
+    expect(find.text('seasons'), findsOneWidget);
+    final seasons = tester.widget<Text>(find.text('seasons'));
+    expect(seasons.style?.fontFamily, PetalSoft.displayFontFamily);
+    expect(seasons.style?.fontSize, PetalSoft.wordmarkSize);
+    expect(seasons.style?.fontStyle, FontStyle.italic);
+    expect(seasons.style?.fontWeight, PetalSoft.wordmarkWeight);
     expect(find.text('Sign out'), findsOneWidget);
     expect(find.byType(MarkLedAvatar), findsOneWidget);
     expect(find.text('GOOD AFTERNOON'), findsOneWidget);

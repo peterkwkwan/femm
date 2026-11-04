@@ -36,15 +36,15 @@ void main() {
     expect(mark.size, DawnMistWelcome.centeredMarkSize);
     expect(mark.size, 78);
 
-    expect(find.text('femm'), findsOneWidget);
-    final femm = tester.widget<Text>(find.text('femm'));
-    expect(femm.style?.color, PetalSoft.ink);
-    expect(femm.style?.fontFamily, PetalSoft.displayFontFamily);
-    expect(femm.style?.fontSize, DawnMistWelcome.majesticWordSize);
-    expect(femm.style?.fontWeight, PetalSoft.majesticWordmarkWeight);
-    expect(femm.style?.fontStyle, FontStyle.italic);
+    expect(find.text('seasons'), findsOneWidget);
+    final seasons = tester.widget<Text>(find.text('seasons'));
+    expect(seasons.style?.color, PetalSoft.ink);
+    expect(seasons.style?.fontFamily, PetalSoft.displayFontFamily);
+    expect(seasons.style?.fontSize, DawnMistWelcome.majesticWordSize);
+    expect(seasons.style?.fontWeight, PetalSoft.majesticWordmarkWeight);
+    expect(seasons.style?.fontStyle, FontStyle.italic);
     expect(
-      femm.style?.letterSpacing,
+      seasons.style?.letterSpacing,
       PetalSoft.letterSpacingEm(
         DawnMistWelcome.majesticWordSize,
         PetalSoft.majesticWordmarkTrackingEm,
