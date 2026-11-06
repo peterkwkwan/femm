@@ -18,10 +18,13 @@ migration:
     - platform: android
       create_revision: adc901062556672b4138e18a4dc62a4be8f4b3c2
       base_revision: adc901062556672b4138e18a4dc62a4be8f4b3c2
+    - platform: ios
+      create_revision: ac4e799d237041cf905519190471f657b657155a
+      base_revision: ac4e799d237041cf905519190471f657b657155a
 
   # User provided section
 
-  # List of Local paths (relative to this file) that should be
+  # Local paths (relative to this file) that should be
   # ignored by the migrate tool.
   #
   # Files that are not part of the templates will be ignored by default.
